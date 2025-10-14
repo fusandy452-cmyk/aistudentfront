@@ -9,7 +9,9 @@
     <script>
         // 內嵌配置
         window.__CONFIG__ = {
-            API_BASE: 'https://aistudentbackend.zeabur.app/api/v1'
+            API_BASE: 'https://aistudentbackend.zeabur.app/api/v1',
+            // 暫時使用測試模式，跳過後端驗證
+            TEST_MODE: true
         };
     </script>
     <style>
@@ -27,15 +29,75 @@
         .block { display: block; }
         
         .message-bubble {
-            @apply max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg px-4 py-2 rounded-2xl;
+            @apply max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg px-4 py-3 rounded-2xl relative shadow-sm;
+            word-wrap: break-word;
         }
         
         .message-user {
-            @apply bg-yellow-400 text-gray-800 ml-auto;
+            @apply bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-800 ml-auto;
+            margin-left: auto;
+            margin-right: 0;
+        }
+        
+        .message-user::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: -8px;
+            width: 0;
+            height: 0;
+            border: 8px solid transparent;
+            border-left-color: #fbbf24;
+            border-bottom: none;
+            border-right: none;
         }
         
         .message-ai {
-            @apply bg-yellow-50 text-gray-800 mr-auto border border-yellow-200;
+            @apply bg-white text-gray-800 mr-auto border border-gray-200;
+            margin-left: 0;
+            margin-right: auto;
+        }
+        
+        .message-ai::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: -8px;
+            width: 0;
+            height: 0;
+            border: 8px solid transparent;
+            border-right-color: white;
+            border-bottom: none;
+            border-left: none;
+        }
+        
+        .message-ai::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: -9px;
+            width: 0;
+            height: 0;
+            border: 8px solid transparent;
+            border-right-color: #e5e7eb;
+            border-bottom: none;
+            border-left: none;
+        }
+        
+        .message-time {
+            @apply text-xs text-gray-500 mt-1;
+        }
+        
+        .message-avatar {
+            @apply w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white;
+        }
+        
+        .avatar-ai {
+            @apply bg-gradient-to-r from-blue-500 to-blue-600;
+        }
+        
+        .avatar-user {
+            @apply bg-gradient-to-r from-yellow-500 to-yellow-600;
         }
     </style>
 </head>
@@ -282,17 +344,21 @@
                 </div>
             </header>
 
-            <main class="flex-1 p-4 overflow-y-auto" id="chat-container">
+            <main class="flex-1 p-4 overflow-y-auto bg-gray-50" id="chat-container">
                 <div class="space-y-4">
-                    <div class="message-bubble message-ai">
-                        <p>您好！我是您的AI留學顧問。我已經了解了您的基本資訊，現在讓我們深入討論您的留學計劃吧！</p>
-                        <p class="mt-2">您可以問我任何關於留學的問題，比如：</p>
-                        <ul class="mt-2 list-disc list-inside text-sm">
-                            <li>推薦適合的學校和專業</li>
-                            <li>申請流程和時間規劃</li>
-                            <li>獎學金申請建議</li>
-                            <li>簽證和住宿資訊</li>
-                        </ul>
+                    <div class="flex items-start space-x-3">
+                        <div class="message-avatar avatar-ai">AI</div>
+                        <div class="message-bubble message-ai">
+                            <p>您好！我是您的AI留學顧問。我已經了解了您的基本資訊，現在讓我們深入討論您的留學計劃吧！</p>
+                            <p class="mt-2">您可以問我任何關於留學的問題，比如：</p>
+                            <ul class="mt-2 list-disc list-inside text-sm">
+                                <li>推薦適合的學校和專業</li>
+                                <li>申請流程和時間規劃</li>
+                                <li>獎學金申請建議</li>
+                                <li>簽證和住宿資訊</li>
+                            </ul>
+                            <div class="message-time">剛剛</div>
+                        </div>
                     </div>
                 </div>
             </main>
@@ -661,73 +727,7 @@
         // 添加消息到聊天
         function addMessage(message, sender) {
             const chatContainer = document.getElementById('chat-container');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message-bubble ${sender === 'user' ? 'message-user' : 'message-ai'}`;
-            messageDiv.innerHTML = `<p>${message}</p>`;
-            chatContainer.appendChild(messageDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-
-        // 發送歡迎訊息
-        async function sendWelcomeMessage() {
-            if (!profileId) return;
+            const messageWrapper = document.createElement('div');
             
-            try {
-                const authHeader = localStorage.getItem('jwt') ? { 'Authorization': `Bearer ${localStorage.getItem('jwt')}` } : {};
-                const response = await fetch(`${window.__CONFIG__.API_BASE}/chat`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...authHeader
-                    },
-                    body: JSON.stringify({
-                        profile_id: profileId,
-                        message: '', // 空訊息觸發歡迎回覆
-                        user_role: currentRole,
-                        language: currentLanguage
-                    })
-                });
-
-                const result = await response.json();
-                
-                if (result.ok) {
-                    addMessage(result.data.response, 'ai');
-                } else {
-                    console.error('Welcome message failed:', result);
-                }
-            } catch (error) {
-                console.error('Welcome message error:', error);
-            }
-        }
-
-        // 載入快速問答按鈕（依身份）
-        function loadQuickActions() {
-            const qa = document.getElementById('quick-actions');
-            if (!qa) return;
-            qa.innerHTML = '';
-            const studentBtns = [
-                { zh: '申請時間規劃', en: 'Timeline planning', q: '請幫我規劃申請時間表' },
-                { zh: '推薦學校/科系', en: 'Recommend schools/majors', q: '依我的背景推薦學校與科系' },
-                { zh: '獎學金建議', en: 'Scholarships', q: '有哪些適合我的獎學金?' }
-            ];
-            const parentBtns = [
-                { zh: '費用/預算', en: 'Costs/Budget', q: '一年總費用預估與預算建議' },
-                { zh: 'ROI/投報', en: 'ROI', q: '幫我估算不同方案的投資回收期' },
-                { zh: '住宿/保險/安全', en: 'Housing/Insurance/Safety', q: '住宿、保險與安全注意事項' }
-            ];
-            const list = currentLanguage === 'en' ? (currentRole === 'parent' ? parentBtns : studentBtns).map(b => ({ label: b.en, q: b.q })) : (currentRole === 'parent' ? parentBtns : studentBtns).map(b => ({ label: b.zh, q: b.q }));
-            list.forEach(b => {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'px-3 py-1.5 text-sm bg-yellow-100 hover:bg-yellow-200 rounded border border-yellow-200';
-                btn.textContent = b.label;
-                btn.onclick = () => {
-                    document.getElementById('message-input').value = b.q;
-                    sendMessage();
-                };
-                qa.appendChild(btn);
-            });
-        }
-    </script>
-</body>
-</html>
+            const currentTime = new Date().toLocaleTimeString('zh-TW', { 
+                hour: '2-digit', 
