@@ -1,0 +1,8 @@
+{
+  "name": "ai-study-advisor-frontend",
+  "type": "static",
+  "rootDirectory": ".",
+  "domains": [
+    "aistudent.zeabur.app"
+  ]
+}
