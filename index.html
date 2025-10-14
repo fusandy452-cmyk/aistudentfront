@@ -344,36 +344,58 @@
                 </div>
             </header>
 
-            <main class="flex-1 p-4 overflow-y-auto bg-gray-50" id="chat-container">
-                <div class="space-y-4">
-                    <div class="flex items-start space-x-3">
-                        <div class="message-avatar avatar-ai">AI</div>
-                        <div class="message-bubble message-ai">
-                            <p>您好！我是您的AI留學顧問。我已經了解了您的基本資訊，現在讓我們深入討論您的留學計劃吧！</p>
-                            <p class="mt-2">您可以問我任何關於留學的問題，比如：</p>
-                            <ul class="mt-2 list-disc list-inside text-sm">
-                                <li>推薦適合的學校和專業</li>
-                                <li>申請流程和時間規劃</li>
-                                <li>獎學金申請建議</li>
-                                <li>簽證和住宿資訊</li>
-                            </ul>
-                            <div class="message-time">剛剛</div>
+            <main class="flex-1 p-6 overflow-y-auto bg-white" id="chat-container">
+                <div class="max-w-4xl mx-auto">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-4">
+                        <div class="flex items-center mb-4">
+                            <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">AI</div>
+                            <div>
+                                <h3 class="font-semibold text-gray-800">AI 留學顧問</h3>
+                                <p class="text-sm text-gray-500">您的專屬留學規劃專家</p>
+                            </div>
                         </div>
+                        <div class="text-gray-700 leading-relaxed">
+                            <p class="mb-3">🎓 您好！我是您的AI留學顧問。</p>
+                            <p class="mb-3">我已經了解了您的基本資訊，現在讓我們深入討論您的留學計劃吧！</p>
+                            <p class="mb-3">您可以問我任何關於留學的問題，比如：</p>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+                                <div class="flex items-center text-sm text-gray-600">
+                                    <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                                    推薦適合的學校和專業
+                                </div>
+                                <div class="flex items-center text-sm text-gray-600">
+                                    <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                                    申請流程和時間規劃
+                                </div>
+                                <div class="flex items-center text-sm text-gray-600">
+                                    <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                                    獎學金申請建議
+                                </div>
+                                <div class="flex items-center text-sm text-gray-600">
+                                    <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                                    簽證和住宿資訊
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-xs text-gray-400 mt-3">剛剛</div>
                     </div>
                 </div>
             </main>
 
-            <footer class="p-3 sm:p-4 border-t border-gray-200">
-                <div id="quick-actions" class="flex flex-wrap gap-2 mb-3"></div>
-                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                    <input type="text" id="message-input" 
-                           class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm sm:text-base"
-                           placeholder="請輸入您的問題...">
-                    <button id="send-btn" 
-                            class="px-4 sm:px-6 py-3 bg-yellow-400 text-gray-800 rounded-lg font-medium hover:bg-yellow-500 transition-colors text-sm sm:text-base"
-                            data-zh="發送" data-en="Send">發送</button>
+            <footer class="p-6 border-t border-gray-200 bg-gray-50">
+                <div class="max-w-4xl mx-auto">
+                    <div id="quick-actions" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-4"></div>
+                    <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
+                        <input type="text" id="message-input" 
+                               class="flex-1 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base bg-white"
+                               placeholder="告訴我你的留學需求、目標或困惑...">
+                        <button id="send-btn" 
+                                class="px-6 py-4 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors text-sm sm:text-base flex items-center justify-center">
+                            <span data-zh="分析" data-en="Analyze">分析</span>
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-3 text-center" data-zh="按 Enter 發送" data-en="Press Enter to send">按 Enter 發送</p>
                 </div>
-                <p class="text-xs text-gray-500 mt-2 text-center" data-zh="按 Enter 發送" data-en="Press Enter to send">按 Enter 發送</p>
             </footer>
         </div>
     </div>
@@ -777,20 +799,25 @@
             });
             
             if (sender === 'user') {
-                messageWrapper.className = 'flex items-start space-x-3 justify-end';
+                messageWrapper.className = 'flex justify-end mb-4';
                 messageWrapper.innerHTML = 
-                    '<div class="message-bubble message-user">' +
-                        '<p>' + message + '</p>' +
-                        '<div class="message-time">' + currentTime + '</div>' +
-                    '</div>' +
-                    '<div class="message-avatar avatar-user">您</div>';
+                    '<div class="max-w-xs sm:max-w-sm md:max-w-md bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-800 rounded-lg p-4 shadow-sm">' +
+                        '<div class="text-sm leading-relaxed">' + message + '</div>' +
+                        '<div class="text-xs text-gray-600 mt-2">' + currentTime + '</div>' +
+                    '</div>';
             } else {
-                messageWrapper.className = 'flex items-start space-x-3';
+                messageWrapper.className = 'mb-4';
                 messageWrapper.innerHTML = 
-                    '<div class="message-avatar avatar-ai">AI</div>' +
-                    '<div class="message-bubble message-ai">' +
-                        '<p>' + message + '</p>' +
-                        '<div class="message-time">' + currentTime + '</div>' +
+                    '<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">' +
+                        '<div class="flex items-center mb-4">' +
+                            '<div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">AI</div>' +
+                            '<div>' +
+                                '<h3 class="font-semibold text-gray-800">AI 留學顧問</h3>' +
+                                '<p class="text-sm text-gray-500">您的專屬留學規劃專家</p>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="text-gray-700 leading-relaxed">' + message + '</div>' +
+                        '<div class="text-xs text-gray-400 mt-3">' + currentTime + '</div>' +
                     '</div>';
             }
             
@@ -851,14 +878,20 @@
             qa.innerHTML = '';
             
             const studentBtns = [
-                { zh: '申請時間規劃', en: 'Timeline planning', q: '請幫我規劃申請時間表' },
-                { zh: '推薦學校/科系', en: 'Recommend schools/majors', q: '依我的背景推薦學校與科系' },
-                { zh: '獎學金建議', en: 'Scholarships', q: '有哪些適合我的獎學金?' }
+                { zh: '學校推薦', en: 'School Recommendations', q: '根據我的背景推薦適合的學校和科系' },
+                { zh: '申請規劃', en: 'Application Planning', q: '請幫我規劃完整的申請時間表和流程' },
+                { zh: '獎學金申請', en: 'Scholarship Application', q: '有哪些適合我的獎學金可以申請？' },
+                { zh: '簽證指導', en: 'Visa Guidance', q: '學生簽證申請流程和注意事項' },
+                { zh: '住宿建議', en: 'Housing Advice', q: '海外住宿選擇和注意事項' },
+                { zh: '語言準備', en: 'Language Preparation', q: '語言考試準備和成績要求' }
             ];
             const parentBtns = [
-                { zh: '費用/預算', en: 'Costs/Budget', q: '一年總費用預估與預算建議' },
-                { zh: 'ROI/投報', en: 'ROI', q: '幫我估算不同方案的投資回收期' },
-                { zh: '住宿/保險/安全', en: 'Housing/Insurance/Safety', q: '住宿、保險與安全注意事項' }
+                { zh: '費用規劃', en: 'Cost Planning', q: '一年總費用預估與預算建議' },
+                { zh: '投資回報', en: 'ROI Analysis', q: '幫我估算不同方案的投資回收期' },
+                { zh: '安全考量', en: 'Safety Considerations', q: '海外留學安全注意事項' },
+                { zh: '保險規劃', en: 'Insurance Planning', q: '留學保險選擇和規劃' },
+                { zh: '就業前景', en: 'Career Prospects', q: '畢業後就業前景和發展' },
+                { zh: '文化適應', en: 'Cultural Adaptation', q: '如何幫助孩子適應海外文化' }
             ];
             
             var buttons = currentRole === 'parent' ? parentBtns : studentBtns;
@@ -869,7 +902,7 @@
                 
                 var button = document.createElement('button');
                 button.type = 'button';
-                button.className = 'px-3 py-1.5 text-sm bg-yellow-100 hover:bg-yellow-200 rounded border border-yellow-200';
+                button.className = 'px-4 py-3 text-sm bg-white hover:bg-gray-50 rounded-lg border border-gray-200 shadow-sm transition-colors text-gray-700 font-medium';
                 button.textContent = label;
                 button.onclick = function(question) {
                     return function() {
@@ -883,4 +916,3 @@
     </script>
 </body>
 </html>
-
