@@ -205,11 +205,11 @@
                         <div class="flex space-x-4">
                             <button type="button" onclick="selectRole('student')" id="role-student" 
                                     class="flex-1 px-6 py-3 bg-blue-500 text-white rounded-lg font-medium transition-colors">
-                                👨‍🎓 學生模式
+                                <span data-zh="👨‍🎓 我是學生" data-en="👨‍🎓 I am a Student">👨‍🎓 我是學生</span>
                             </button>
                             <button type="button" onclick="selectRole('parent')" id="role-parent" 
                                     class="flex-1 px-6 py-3 bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors hover:bg-gray-400">
-                                👨‍👩‍👧‍👦 家長模式
+                                <span data-zh="👨‍👩‍👧‍👦 我是家長" data-en="👨‍👩‍👧‍👦 I am a Parent">👨‍👩‍👧‍👦 我是家長</span>
                             </button>
                         </div>
                     </div>
@@ -327,11 +327,11 @@
 
         // 登入功能
         function loginWithGoogle() {
-            window.location.href = `${window.__CONFIG__.API_BASE.replace('/api/v1', '')}/auth/google`;
+            alert(currentLanguage === 'en' ? 'Login is temporarily unavailable. Please click "Skip login, start directly".' : '登入功能暫時不可用，請點「跳過登入，直接開始」');
         }
 
         function loginWithLine() {
-            window.location.href = `${window.__CONFIG__.API_BASE.replace('/api/v1', '')}/auth/line`;
+            alert(currentLanguage === 'en' ? 'Login is temporarily unavailable. Please click "Skip login, start directly".' : '登入功能暫時不可用，請點「跳過登入，直接開始」');
         }
 
         function logout() {
@@ -341,10 +341,21 @@
         // 語言切換
         function switchLanguage(lang) {
             currentLanguage = lang;
-            document.getElementById('lang-switch-zh').classList.toggle('bg-gray-200', lang !== 'zh');
+            // 更新所有具備 data-zh / data-en 的元素
+            const elements = document.querySelectorAll('[data-zh]');
+            elements.forEach(el => {
+                const text = el.getAttribute(`data-${currentLanguage}`);
+                if (text) el.textContent = text;
+            });
+            // 更新語言切換按鈕樣式
             document.getElementById('lang-switch-zh').classList.toggle('bg-blue-500', lang === 'zh');
-            document.getElementById('lang-switch-en').classList.toggle('bg-gray-200', lang !== 'en');
+            document.getElementById('lang-switch-zh').classList.toggle('bg-gray-200', lang !== 'zh');
+            document.getElementById('lang-switch-zh').classList.toggle('text-white', lang === 'zh');
+            document.getElementById('lang-switch-zh').classList.toggle('text-gray-700', lang !== 'zh');
             document.getElementById('lang-switch-en').classList.toggle('bg-blue-500', lang === 'en');
+            document.getElementById('lang-switch-en').classList.toggle('bg-gray-200', lang !== 'en');
+            document.getElementById('lang-switch-en').classList.toggle('text-white', lang === 'en');
+            document.getElementById('lang-switch-en').classList.toggle('text-gray-700', lang !== 'en');
         }
 
         // 角色選擇
