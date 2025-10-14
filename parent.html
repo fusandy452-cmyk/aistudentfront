@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 留學顧問 - 家長專區</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        window.__CONFIG__ = {
+            API_BASE: 'https://aistudentbackend.zeabur.app/api/v1'
+        };
+    </script>
+    <style>
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .slide-in {
+            animation: slideIn 0.4s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(0); }
+        }
+        
+        .message-bubble {
+            @apply max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg px-4 py-2 rounded-2xl;
+        }
+        
+        .message-user {
+            @apply bg-green-500 text-white ml-auto;
+        }
+        
+        .message-ai {
+            @apply bg-gray-100 text-gray-800 mr-auto;
+        }
+        
+        .typing-indicator {
+            @apply flex space-x-1;
+        }
+        
+        .typing-dot {
+            @apply w-2 h-2 bg-gray-400 rounded-full animate-pulse;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-green-50 to-emerald-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- 標題區域 -->
+        <div class="text-center mb-8 fade-in">
+            <h1 class="text-4xl font-bold text-gray-900 mb-4">👨‍👩‍👧‍👦 AI 留學顧問 - 家長專區</h1>
+            <p class="text-lg text-gray-600 mb-6">專為家長設計的留學規劃諮詢平台</p>
+            
+            <!-- 角色切換 -->
+            <div class="flex justify-center space-x-4 mb-6">
+                <button onclick="switchRole('parent')" 
+                        class="px-6 py-2 bg-green-600 text-white rounded-lg font-medium transition-colors">
+                    👨‍👩‍👧‍👦 家長模式
+                </button>
+                <button onclick="switchRole('student')" 
+                        class="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors hover:bg-gray-400">
+                    👨‍🎓 學生模式
+                </button>
+            </div>
+        </div>
+
+        <!-- 聊天區域 -->
+        <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden fade-in">
+            <!-- 聊天標題 -->
+            <div class="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4">
+                <h2 class="text-xl font-semibold text-white">與 AI 顧問對話（家長模式）</h2>
+                <p class="text-green-100 text-sm">我是您的專屬留學顧問，可以協助您了解孩子的留學規劃</p>
+            </div>
+
+            <!-- 聊天內容 -->
+            <div id="chatContainer" class="h-96 overflow-y-auto p-6 space-y-4">
+                <!-- 歡迎訊息 -->
+                <div class="message-bubble message-ai slide-in">
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                            AI
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-700 mb-1">AI 留學顧問</p>
+                            <p>您好！我是您的專屬留學顧問 🤖</p>
+                            <p class="mt-2">作為家長，我可以幫助您：</p>
+                            <ul class="list-disc list-inside text-sm mt-1 space-y-1">
+                                <li>了解孩子的留學申請進度</li>
+                                <li>評估留學投資回報</li>
+                                <li>規劃家庭財務預算</li>
+                                <li>了解如何支持孩子的申請</li>
+                                <li>解答留學相關疑問</li>
+                            </ul>
+                            <p class="mt-2">請告訴我您的問題，我會為您提供專業的建議！</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 輸入區域 -->
+            <div class="border-t border-gray-200 p-6">
+                <div class="flex space-x-4">
+                    <input type="text" id="messageInput" 
+                           placeholder="輸入您的問題..." 
+                           class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                           onkeypress="handleKeyPress(event)">
+                    <button onclick="sendMessage()" 
+                            class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
+                        發送
+                    </button>
+                </div>
+                
+                <!-- 快速問題按鈕 -->
+                <div class="mt-4">
+                    <p class="text-sm text-gray-600 mb-2">快速問題：</p>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="askQuickQuestion('我孩子 SAT 考了 1450，值得投資留學嗎？')" 
+                                class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition-colors">
+                            📊 SAT 1450 投資回報
+                        </button>
+                        <button onclick="askQuickQuestion('留學費用預算和財務規劃')" 
+                                class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition-colors">
+                            💰 財務規劃
+                        </button>
+                        <button onclick="askQuickQuestion('如何支持孩子的申請過程')" 
+                                class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition-colors">
+                            🤝 支持孩子
+                        </button>
+                        <button onclick="askQuickQuestion('留學風險評估和應對策略')" 
+                                class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition-colors">
+                            ⚠️ 風險評估
+                        </button>
+                        <button onclick="askQuickQuestion('孩子未來職業發展前景')" 
+                                class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition-colors">
+                            🎯 職業前景
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 功能區域 -->
+        <div class="max-w-4xl mx-auto mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- 孩子資料卡片 -->
+            <div class="bg-white rounded-xl shadow-lg p-6 fade-in">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">👨‍🎓 孩子資料</h3>
+                <div id="profileInfo" class="space-y-2 text-sm text-gray-600">
+                    <p>載入中...</p>
+                </div>
+                <button onclick="updateProfile()" 
+                        class="mt-4 w-full px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors">
+                    更新資料
+                </button>
+            </div>
+
+            <!-- 財務規劃 -->
+            <div class="bg-white rounded-xl shadow-lg p-6 fade-in">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">💰 財務規劃</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">年度預算</span>
+                        <span class="text-green-600 font-medium" id="budgetAmount">-</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">學費預估</span>
+                        <span class="text-blue-600 font-medium">$50,000-80,000</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">生活費預估</span>
+                        <span class="text-purple-600 font-medium">$15,000-25,000</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">獎學金機會</span>
+                        <span class="text-yellow-600 font-medium">中等</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 重要提醒 -->
+            <div class="bg-white rounded-xl shadow-lg p-6 fade-in">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">⚠️ 重要提醒</h3>
+                <div class="space-y-3 text-sm">
+                    <div class="flex items-start space-x-2">
+                        <span class="text-red-500">🔴</span>
+                        <span class="text-gray-600">財務證明準備：建議提前3個月</span>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <span class="text-yellow-500">🟡</span>
+                        <span class="text-gray-600">獎學金申請：多數截止日期在12月</span>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <span class="text-blue-500">🔵</span>
+                        <span class="text-gray-600">簽證申請：錄取後立即開始準備</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 投資回報分析 -->
+        <div class="max-w-4xl mx-auto mt-8 bg-white rounded-xl shadow-lg p-6 fade-in">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">📊 留學投資回報分析</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-medium text-gray-700 mb-2">投資成本</h4>
+                    <ul class="space-y-1 text-sm text-gray-600">
+                        <li>• 學費：$200,000-320,000 (4年)</li>
+                        <li>• 生活費：$60,000-100,000 (4年)</li>
+                        <li>• 其他費用：$20,000-40,000</li>
+                        <li>• 總計：$280,000-460,000</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-medium text-gray-700 mb-2">預期回報</h4>
+                    <ul class="space-y-1 text-sm text-gray-600">
+                        <li>• 起薪：$60,000-120,000/年</li>
+                        <li>• 職業發展：更廣闊的國際視野</li>
+                        <li>• 人脈網絡：國際校友資源</li>
+                        <li>• 回報期：5-8年</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentRole = 'parent';
+        let profileId = null;
+        let chatHistory = [];
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProfile();
+        });
+
+        // 載入孩子資料
+        async function loadProfile() {
+            // 這裡可以從 localStorage 或 URL 參數獲取 profile_id
+            const urlParams = new URLSearchParams(window.location.search);
+            profileId = urlParams.get('profile_id') || localStorage.getItem('profile_id');
+            
+            if (profileId) {
+                try {
+                    const response = await fetch(`${window.__CONFIG__.API_BASE}/admin/profile/${profileId}`);
+                    const result = await response.json();
+                    
+                    if (result.ok) {
+                        displayProfile(result.data.profile);
+                    }
+                } catch (error) {
+                    console.error('載入孩子資料錯誤:', error);
+                }
+            } else {
+                // 如果沒有 profile_id，顯示提示
+                document.getElementById('profileInfo').innerHTML = '<p class="text-gray-500">請先完成測評表單</p>';
+            }
+        }
+
+        // 顯示孩子資料
+        function displayProfile(profile) {
+            const profileInfo = document.getElementById('profileInfo');
+            profileInfo.innerHTML = `
+                <p><strong>孩子姓名：</strong>${profile.student_name}</p>
+                <p><strong>就讀學校：</strong>${profile.high_school}</p>
+                <p><strong>GPA：</strong>${profile.gpa}/4.0</p>
+                <p><strong>目標專業：</strong>${profile.intended_major}</p>
+                <p><strong>目標國家：</strong>${profile.countries.join(', ')}</p>
+                <p><strong>家庭預算：</strong>$${profile.budget.toLocaleString()}/年</p>
+            `;
+
+            // 更新財務規劃
+            document.getElementById('budgetAmount').textContent = `$${profile.budget.toLocaleString()}/年`;
+        }
+
+        // 切換角色
+        function switchRole(role) {
+            currentRole = role;
+            
+            // 更新按鈕樣式
+            const buttons = document.querySelectorAll('button[onclick^="switchRole"]');
+            buttons.forEach(btn => {
+                if (btn.onclick.toString().includes(role)) {
+                    btn.className = 'px-6 py-2 bg-green-600 text-white rounded-lg font-medium transition-colors';
+                } else {
+                    btn.className = 'px-6 py-2 bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors hover:bg-gray-400';
+                }
+            });
+
+            // 更新聊天標題
+            const title = document.querySelector('h2');
+            const subtitle = document.querySelector('p');
+            
+            if (role === 'parent') {
+                title.textContent = '與 AI 顧問對話（家長模式）';
+                subtitle.textContent = '我是您的專屬留學顧問，可以協助您了解孩子的留學規劃';
+            } else {
+                title.textContent = '與 AI 顧問對話';
+                subtitle.textContent = '我是您的專屬留學顧問，可以協助您規劃留學申請的各個環節';
+            }
+
+            // 清空聊天記錄
+            document.getElementById('chatContainer').innerHTML = '';
+            chatHistory = [];
+            
+            // 添加歡迎訊息
+            addWelcomeMessage();
+        }
+
+        // 添加歡迎訊息
+        function addWelcomeMessage() {
+            const container = document.getElementById('chatContainer');
+            const welcomeMsg = currentRole === 'parent' ? 
+                `您好！我是您的專屬留學顧問 🤖
+
+                作為家長，我可以幫助您：
+                • 了解孩子的留學申請進度
+                • 評估留學投資回報
+                • 規劃家庭財務預算
+                • 了解如何支持孩子的申請
+                • 解答留學相關疑問
+
+                請告訴我您的問題，我會為您提供專業的建議！` :
+                `你好！我是你的專屬留學顧問 🤖
+
+                我可以幫助你：
+                • 推薦適合的學校和專業
+                • 規劃申請時間表
+                • 提供考試準備建議
+                • 協助撰寫申請文件
+                • 解答留學相關問題
+
+                請告訴我你的問題，我會為你提供專業的建議！`;
+
+            container.innerHTML = `
+                <div class="message-bubble message-ai slide-in">
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                            AI
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-700 mb-1">AI 留學顧問</p>
+                            <p class="whitespace-pre-line">${welcomeMsg}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 發送訊息
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            if (!profileId) {
+                alert('請先完成測評表單');
+                return;
+            }
+
+            // 添加用戶訊息到聊天
+            addMessage(message, 'user');
+            input.value = '';
+
+            // 顯示打字指示器
+            showTypingIndicator();
+
+            try {
+                const response = await fetch(`${window.__CONFIG__.API_BASE}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        profile_id: profileId,
+                        message: message,
+                        chat_history: chatHistory,
+                        user_role: currentRole
+                    })
+                });
+
+                const result = await response.json();
+                
+                // 隱藏打字指示器
+                hideTypingIndicator();
+
+                if (result.ok) {
+                    addMessage(result.data.response, 'ai');
+                    chatHistory.push({ role: 'user', content: message });
+                    chatHistory.push({ role: 'assistant', content: result.data.response });
+                } else {
+                    addMessage('抱歉，我暫時無法回應。請稍後再試。', 'ai');
+                }
+            } catch (error) {
+                hideTypingIndicator();
+                addMessage('抱歉，發生了錯誤。請檢查網路連接後再試。', 'ai');
+                console.error('發送訊息錯誤:', error);
+            }
+        }
+
+        // 添加訊息到聊天
+        function addMessage(content, sender) {
+            const container = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message-bubble message-${sender} fade-in`;
+            
+            const senderName = sender === 'user' ? (currentRole === 'parent' ? '家長' : '學生') : 'AI 留學顧問';
+            const avatar = sender === 'user' ? (currentRole === 'parent' ? '👨‍👩‍👧‍👦' : '👨‍🎓') : 'AI';
+            
+            messageDiv.innerHTML = `
+                <div class="flex items-start space-x-3">
+                    <div class="w-8 h-8 ${sender === 'user' ? 'bg-green-500' : 'bg-green-500'} rounded-full flex items-center justify-center text-white text-sm font-bold">
+                        ${avatar}
+                    </div>
+                    <div>
+                        <p class="font-medium text-gray-700 mb-1">${senderName}</p>
+                        <p class="whitespace-pre-line">${content}</p>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // 顯示打字指示器
+        function showTypingIndicator() {
+            const container = document.getElementById('chatContainer');
+            const typingDiv = document.createElement('div');
+            typingDiv.id = 'typingIndicator';
+            typingDiv.className = 'message-bubble message-ai fade-in';
+            typingDiv.innerHTML = `
+                <div class="flex items-start space-x-3">
+                    <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                        AI
+                    </div>
+                    <div>
+                        <p class="font-medium text-gray-700 mb-1">AI 留學顧問</p>
+                        <div class="typing-indicator">
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot" style="animation-delay: 0.2s"></div>
+                            <div class="typing-dot" style="animation-delay: 0.4s"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(typingDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // 隱藏打字指示器
+        function hideTypingIndicator() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        // 快速問題
+        function askQuickQuestion(question) {
+            document.getElementById('messageInput').value = question;
+            sendMessage();
+        }
+
+        // 處理 Enter 鍵
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        // 更新孩子資料
+        function updateProfile() {
+            // 這裡可以跳轉到測評表單或個人資料編輯頁面
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

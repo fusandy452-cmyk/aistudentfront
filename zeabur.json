@@ -1,0 +1,14 @@
+{
+  "name": "ai-study-advisor-frontend",
+  "type": "static",
+  "buildCommand": "npm install",
+  "startCommand": "npm start",
+  "rootDirectory": ".",
+  "environment": {
+    "NODE_ENV": "production",
+    "PORT": "3000"
+  },
+  "domains": [
+    "aistudent.zeabur.app"
+  ]
+}
