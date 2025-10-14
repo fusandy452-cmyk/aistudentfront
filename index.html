@@ -402,14 +402,14 @@
 
     <script>
         // 全局變量
-        let currentRole = 'student';
-        let currentLanguage = 'zh';
-        let profileId = null;
+        var currentRole = 'student';
+        var currentLanguage = 'zh';
+        var profileId = null;
 
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
             // 取得 Google Client ID 以初始化 GIS
-            fetch(`${window.__CONFIG__.API_BASE}/auth/config`)
+            fetch(window.__CONFIG__.API_BASE + '/auth/config')
                 .then(r => r.json())
                 .then(cfg => {
                     if (cfg && cfg.ok && cfg.googleClientId) {
@@ -485,12 +485,12 @@
                 alert(currentLanguage === 'en' ? 'Google login is not ready.' : 'Google 登入尚未就緒');
                 return;
             }
-            const client = google.accounts.oauth2.initTokenClient({
+            var client = google.accounts.oauth2.initTokenClient({
                 client_id: window.__GOOGLE_CLIENT_ID__,
                 scope: 'openid email profile',
                 callback: async (response) => {
                     try {
-                        const idToken = response.access_token ? undefined : undefined; // token client 不給 id_token
+                        var idToken = response.access_token ? undefined : undefined; // token client 不給 id_token
                     } catch (e) {}
                 }
             });
@@ -499,13 +499,13 @@
                 client_id: window.__GOOGLE_CLIENT_ID__,
                 callback: async (resp) => {
                     try {
-                        const idToken = resp.credential;
-                        const r = await fetch(`${window.__CONFIG__.API_BASE}/auth/google/verify`, {
+                        var idToken = resp.credential;
+                        var r = await fetch(window.__CONFIG__.API_BASE + '/auth/google/verify', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ idToken })
                         });
-                        const data = await r.json();
+                        var data = await r.json();
                         if (data.ok && data.token) {
                             localStorage.setItem('jwt', data.token);
                             showUserInfo(data.user || { name: 'User' });
@@ -526,26 +526,26 @@
         }
 
         function logout() {
-            window.location.href = `${window.__CONFIG__.API_BASE.replace('/api/v1', '')}/auth/logout`;
+            window.location.href = window.__CONFIG__.API_BASE.replace('/api/v1', '') + '/auth/logout';
         }
 
         // 跳過登入
         function skipLogin() {
             // 創建一個假的 JWT token 用於測試
-            const fakeToken = 'fake-jwt-token-for-testing';
+            var fakeToken = 'fake-jwt-token-for-testing';
             localStorage.setItem('jwt', fakeToken);
             showSetupPage();
         }
 
         // 初始化年份選項
         function initializeYearOptions() {
-            const yearSelect = document.getElementById('intake_year');
-            const currentYear = new Date().getFullYear();
+            var yearSelect = document.getElementById('intake_year');
+            var currentYear = new Date().getFullYear();
             
             // 生成未來 5 年的選項
-            for (let i = 0; i < 5; i++) {
-                const year = currentYear + i;
-                const option = document.createElement('option');
+            for (var i = 0; i < 5; i++) {
+                var year = currentYear + i;
+                var option = document.createElement('option');
                 option.value = year;
                 option.textContent = year;
                 option.setAttribute('data-zh', year);
@@ -556,18 +556,18 @@
 
         // 更新目標入學時間
         function updateTargetIntake() {
-            const semester = document.getElementById('intake_semester').value;
-            const year = document.getElementById('intake_year').value;
-            const targetIntakeInput = document.getElementById('target_intake');
+            var semester = document.getElementById('intake_semester').value;
+            var year = document.getElementById('intake_year').value;
+            var targetIntakeInput = document.getElementById('target_intake');
             
             if (semester && year) {
-                const semesterText = currentLanguage === 'en' 
+                var semesterText = currentLanguage === 'en' 
                     ? semester.charAt(0).toUpperCase() + semester.slice(1)
                     : semester === 'fall' ? '秋季' : semester === 'spring' ? '春季' : semester === 'summer' ? '夏季' : '冬季';
                 
-                const intakeText = currentLanguage === 'en' 
-                    ? `${semesterText} ${year}`
-                    : `${year}年${semesterText}`;
+                var intakeText = currentLanguage === 'en' 
+                    ? semesterText + ' ' + year
+                    : year + '年' + semesterText;
                 
                 targetIntakeInput.value = intakeText;
             } else {
@@ -579,23 +579,26 @@
         function switchLanguage(lang) {
             currentLanguage = lang;
             // 更新所有具備 data-zh / data-en 的元素
-            const elements = document.querySelectorAll('[data-zh]');
-            elements.forEach(el => {
-                const text = el.getAttribute(`data-${currentLanguage}`);
+            var elements = document.querySelectorAll('[data-zh]');
+            for (var i = 0; i < elements.length; i++) {
+                var el = elements[i];
+                var text = el.getAttribute('data-' + currentLanguage);
                 if (text) el.textContent = text;
-            });
+            }
             // 更新 placeholder
-            const inputs = document.querySelectorAll('[data-zh-ph]');
-            inputs.forEach(input => {
-                const placeholder = input.getAttribute(`data-${currentLanguage}-ph`);
+            var inputs = document.querySelectorAll('[data-zh-ph]');
+            for (var j = 0; j < inputs.length; j++) {
+                var input = inputs[j];
+                var placeholder = input.getAttribute('data-' + currentLanguage + '-ph');
                 if (placeholder) input.placeholder = placeholder;
-            });
+            }
             // 更新 select 選項
-            const options = document.querySelectorAll('option[data-zh]');
-            options.forEach(option => {
-                const text = option.getAttribute(`data-${currentLanguage}`);
+            var options = document.querySelectorAll('option[data-zh]');
+            for (var k = 0; k < options.length; k++) {
+                var option = options[k];
+                var text = option.getAttribute('data-' + currentLanguage);
                 if (text) option.textContent = text;
-            });
+            }
             
             // 更新目標入學時間顯示
             updateTargetIntake();
@@ -873,11 +876,11 @@
 
         // 載入快速問答按鈕（依身份）
         function loadQuickActions() {
-            const qa = document.getElementById('quick-actions');
+            var qa = document.getElementById('quick-actions');
             if (!qa) return;
             qa.innerHTML = '';
             
-            const studentBtns = [
+            var studentBtns = [
                 { zh: '學校推薦', en: 'School Recommendations', q: '根據我的背景推薦適合的學校和科系' },
                 { zh: '申請規劃', en: 'Application Planning', q: '請幫我規劃完整的申請時間表和流程' },
                 { zh: '獎學金申請', en: 'Scholarship Application', q: '有哪些適合我的獎學金可以申請？' },
@@ -885,7 +888,7 @@
                 { zh: '住宿建議', en: 'Housing Advice', q: '海外住宿選擇和注意事項' },
                 { zh: '語言準備', en: 'Language Preparation', q: '語言考試準備和成績要求' }
             ];
-            const parentBtns = [
+            var parentBtns = [
                 { zh: '費用規劃', en: 'Cost Planning', q: '一年總費用預估與預算建議' },
                 { zh: '投資回報', en: 'ROI Analysis', q: '幫我估算不同方案的投資回收期' },
                 { zh: '安全考量', en: 'Safety Considerations', q: '海外留學安全注意事項' },
