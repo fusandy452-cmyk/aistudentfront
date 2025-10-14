@@ -418,16 +418,23 @@
         });
 
         // 檢查認證狀態
-        async function checkAuthStatus() {
+        function checkAuthStatus() {
             try {
-                const response = await fetch(`${window.__CONFIG__.API_BASE}/auth/status`);
-                const data = await response.json();
-                
-                if (data.ok && data.user) {
-                    showUserInfo(data.user);
-                } else {
+                fetch(window.__CONFIG__.API_BASE + '/auth/status')
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data.ok && data.user) {
+                        showUserInfo(data.user);
+                    } else {
+                        showLoginButtons();
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Auth check failed:', error);
                     showLoginButtons();
-                }
+                });
             } catch (error) {
                 console.error('Auth check failed:', error);
                 showLoginButtons();
@@ -618,11 +625,11 @@
         }
 
         // 處理設定提交
-        async function handleSetupSubmit(e) {
+        function handleSetupSubmit(e) {
             e.preventDefault();
             
-            const formData = new FormData(e.target);
-            let data = {};
+            var formData = new FormData(e.target);
+            var data = {};
             
             if (currentRole === 'student') {
                 data = {
@@ -631,7 +638,7 @@
                     citizenship: formData.get('citizenship'),
                     gpa: parseFloat(formData.get('gpa')),
                     degree: formData.get('degree'),
-                    countries: Array.from(document.querySelectorAll('input[name="countries"]:checked')).map(cb => cb.value),
+                    countries: getCheckedCountries(),
                     budget: parseInt(formData.get('budget')),
                     target_intake: formData.get('target_intake'),
                     user_role: currentRole
@@ -645,7 +652,7 @@
                     child_email: formData.get('child_email'),
                     gpa: parseFloat(formData.get('gpa')),
                     degree: formData.get('degree'),
-                    countries: Array.from(document.querySelectorAll('input[name="countries"]:checked')).map(cb => cb.value),
+                    countries: getCheckedCountries(),
                     budget: parseInt(formData.get('budget')),
                     target_intake: formData.get('target_intake'),
                     user_role: currentRole
@@ -654,40 +661,60 @@
 
             try {
                 // 檢查是否有 JWT token
-                const jwt = localStorage.getItem('jwt');
+                var jwt = localStorage.getItem('jwt');
                 if (!jwt) {
                     alert(currentLanguage === 'en' ? 'Please login first or skip login to continue.' : '請先登入或跳過登入繼續');
                     return;
                 }
                 
-                const authHeader = { 'Authorization': `Bearer ${jwt}` };
-                const response = await fetch(`${window.__CONFIG__.API_BASE}/intake`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...authHeader
-                    },
-                    body: JSON.stringify(data)
-                });
-
-                const result = await response.json();
-                
-                if (result.ok) {
-                    profileId = result.data.profile_id;
-                    showChatPage();
-                } else {
-                    alert('提交失敗：' + result.error);
+                var authHeader = { 'Authorization': 'Bearer ' + jwt };
+                var headers = {
+                    'Content-Type': 'application/json'
+                };
+                for (var key in authHeader) {
+                    headers[key] = authHeader[key];
                 }
+                
+                fetch(window.__CONFIG__.API_BASE + '/intake', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(data)
+                })
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(result) {
+                    if (result.ok) {
+                        profileId = result.data.profile_id;
+                        showChatPage();
+                    } else {
+                        alert('提交失敗：' + result.error);
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Setup submission failed:', error);
+                    alert('提交失敗，請檢查網路連接');
+                });
             } catch (error) {
                 console.error('Setup submission failed:', error);
                 alert('提交失敗，請檢查網路連接');
             }
         }
+        
+        // 獲取選中的國家
+        function getCheckedCountries() {
+            var countries = [];
+            var checkboxes = document.querySelectorAll('input[name="countries"]:checked');
+            for (var i = 0; i < checkboxes.length; i++) {
+                countries.push(checkboxes[i].value);
+            }
+            return countries;
+        }
 
         // 發送消息
-        async function sendMessage() {
-            const input = document.getElementById('message-input');
-            const message = input.value.trim();
+        function sendMessage() {
+            var input = document.getElementById('message-input');
+            var message = input.value.trim();
             
             if (!message) return;
 
@@ -696,28 +723,43 @@
             input.value = '';
 
             try {
-                const authHeader = localStorage.getItem('jwt') ? { 'Authorization': `Bearer ${localStorage.getItem('jwt')}` } : {};
-                const response = await fetch(`${window.__CONFIG__.API_BASE}/chat`, {
+                var authHeader = {};
+                var jwt = localStorage.getItem('jwt');
+                if (jwt) {
+                    authHeader['Authorization'] = 'Bearer ' + jwt;
+                }
+                
+                var headers = {
+                    'Content-Type': 'application/json'
+                };
+                for (var key in authHeader) {
+                    headers[key] = authHeader[key];
+                }
+                
+                fetch(window.__CONFIG__.API_BASE + '/chat', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...authHeader
-                    },
+                    headers: headers,
                     body: JSON.stringify({
                         profile_id: profileId,
                         message: message,
                         user_role: currentRole,
                         language: currentLanguage
                     })
+                })
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(result) {
+                    if (result.ok) {
+                        addMessage(result.data.response, 'ai');
+                    } else {
+                        addMessage('抱歉，我無法處理您的請求。請稍後再試。', 'ai');
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Chat failed:', error);
+                    addMessage('抱歉，網路連接出現問題。請檢查您的網路連接。', 'ai');
                 });
-
-                const result = await response.json();
-                
-                if (result.ok) {
-                    addMessage(result.data.response, 'ai');
-                } else {
-                    addMessage('抱歉，我無法處理您的請求。請稍後再試。', 'ai');
-                }
             } catch (error) {
                 console.error('Chat failed:', error);
                 addMessage('抱歉，網路連接出現問題。請檢查您的網路連接。', 'ai');
@@ -726,8 +768,119 @@
 
         // 添加消息到聊天
         function addMessage(message, sender) {
-            const chatContainer = document.getElementById('chat-container');
-            const messageWrapper = document.createElement('div');
+            var chatContainer = document.getElementById('chat-container');
+            var messageWrapper = document.createElement('div');
             
-            const currentTime = new Date().toLocaleTimeString('zh-TW', { 
+            var currentTime = new Date().toLocaleTimeString('zh-TW', { 
                 hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            if (sender === 'user') {
+                messageWrapper.className = 'flex items-start space-x-3 justify-end';
+                messageWrapper.innerHTML = 
+                    '<div class="message-bubble message-user">' +
+                        '<p>' + message + '</p>' +
+                        '<div class="message-time">' + currentTime + '</div>' +
+                    '</div>' +
+                    '<div class="message-avatar avatar-user">您</div>';
+            } else {
+                messageWrapper.className = 'flex items-start space-x-3';
+                messageWrapper.innerHTML = 
+                    '<div class="message-avatar avatar-ai">AI</div>' +
+                    '<div class="message-bubble message-ai">' +
+                        '<p>' + message + '</p>' +
+                        '<div class="message-time">' + currentTime + '</div>' +
+                    '</div>';
+            }
+            
+            chatContainer.appendChild(messageWrapper);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // 發送歡迎訊息
+        function sendWelcomeMessage() {
+            if (!profileId) return;
+            
+            try {
+                var authHeader = {};
+                var jwt = localStorage.getItem('jwt');
+                if (jwt) {
+                    authHeader['Authorization'] = 'Bearer ' + jwt;
+                }
+                
+                var headers = {
+                    'Content-Type': 'application/json'
+                };
+                for (var key in authHeader) {
+                    headers[key] = authHeader[key];
+                }
+                
+                fetch(window.__CONFIG__.API_BASE + '/chat', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        profile_id: profileId,
+                        message: '', // 空訊息觸發歡迎回覆
+                        user_role: currentRole,
+                        language: currentLanguage
+                    })
+                })
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(result) {
+                    if (result.ok) {
+                        addMessage(result.data.response, 'ai');
+                    } else {
+                        console.error('Welcome message failed:', result);
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Welcome message error:', error);
+                });
+            } catch (error) {
+                console.error('Welcome message error:', error);
+            }
+        }
+
+        // 載入快速問答按鈕（依身份）
+        function loadQuickActions() {
+            const qa = document.getElementById('quick-actions');
+            if (!qa) return;
+            qa.innerHTML = '';
+            
+            const studentBtns = [
+                { zh: '申請時間規劃', en: 'Timeline planning', q: '請幫我規劃申請時間表' },
+                { zh: '推薦學校/科系', en: 'Recommend schools/majors', q: '依我的背景推薦學校與科系' },
+                { zh: '獎學金建議', en: 'Scholarships', q: '有哪些適合我的獎學金?' }
+            ];
+            const parentBtns = [
+                { zh: '費用/預算', en: 'Costs/Budget', q: '一年總費用預估與預算建議' },
+                { zh: 'ROI/投報', en: 'ROI', q: '幫我估算不同方案的投資回收期' },
+                { zh: '住宿/保險/安全', en: 'Housing/Insurance/Safety', q: '住宿、保險與安全注意事項' }
+            ];
+            
+            var buttons = currentRole === 'parent' ? parentBtns : studentBtns;
+            
+            for (var i = 0; i < buttons.length; i++) {
+                var btn = buttons[i];
+                var label = currentLanguage === 'en' ? btn.en : btn.zh;
+                
+                var button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'px-3 py-1.5 text-sm bg-yellow-100 hover:bg-yellow-200 rounded border border-yellow-200';
+                button.textContent = label;
+                button.onclick = function(question) {
+                    return function() {
+                        document.getElementById('message-input').value = question;
+                        sendMessage();
+                    };
+                }(btn.q);
+                qa.appendChild(button);
+            }
+        }
+    </script>
+</body>
+</html>
+
