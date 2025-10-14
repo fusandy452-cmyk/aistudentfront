@@ -68,11 +68,6 @@
                 </div>
             </div>
 
-            <button id="start-intake-btn" 
-                    class="w-full bg-yellow-400 text-gray-800 py-3 px-6 rounded-lg font-medium hover:bg-yellow-500 transition-colors duration-200 text-lg shadow-lg"
-                    data-zh="開始測評" data-en="Start Assessment">
-                開始測評
-            </button>
 
             <!-- 語言切換 -->
             <div class="mt-6 flex justify-center space-x-4">
@@ -91,12 +86,14 @@
     <!-- 設定頁面 -->
     <div id="setup-page" class="min-h-screen hidden">
         <div class="max-w-2xl mx-auto bg-white min-h-screen">
-            <header class="bg-gradient-to-r from-yellow-400 to-yellow-300 text-gray-800 p-4 sm:p-6 text-center relative">
-                <button id="back-to-home" class="absolute left-2 sm:left-4 top-4 sm:top-6 text-gray-800 hover:text-gray-600 transition-colors text-sm sm:text-base">
-                    <span data-zh="← 返回首頁" data-en="← Back to Home">← 返回首頁</span>
+            <header class="bg-gradient-to-r from-yellow-400 to-yellow-300 text-gray-800 p-4 sm:p-6 relative">
+                <button id="back-to-home" class="absolute left-2 sm:left-4 top-4 sm:top-6 text-gray-800 hover:text-gray-600 transition-colors text-sm sm:text-base z-10">
+                    <span data-zh="← Back" data-en="← Back">← Back</span>
                 </button>
-                <h1 class="text-lg sm:text-xl lg:text-2xl font-bold mb-1 sm:mb-2" data-zh="設定您的留學需求" data-en="Set Your Study Abroad Requirements">設定您的留學需求</h1>
-                <p class="text-gray-600 text-sm sm:text-base" data-zh="讓我們先了解您的基本資訊" data-en="Let us understand your basic information first">讓我們先了解您的基本資訊</p>
+                <div class="text-center px-12 sm:px-0">
+                    <h1 class="text-base sm:text-xl lg:text-2xl font-bold mb-1 sm:mb-2 leading-tight" data-zh="設定您的留學需求" data-en="Set Your Study Abroad Requirements">設定您的留學需求</h1>
+                    <p class="text-gray-600 text-xs sm:text-base leading-tight" data-zh="讓我們先了解您的基本資訊" data-en="Let us understand your basic information first">讓我們先了解您的基本資訊</p>
+                </div>
             </header>
 
             <!-- Setup Form -->
@@ -107,26 +104,59 @@
                         <h3 class="text-lg font-semibold text-gray-800 mb-4">
                             <div class="flex items-center mb-2">
                                 <span class="w-6 h-6 bg-yellow-400 text-gray-800 rounded-full flex items-center justify-center text-sm mr-2">1</span>
-                                個人基本資訊
+                                <span data-zh="個人基本資訊" data-en="Personal Information">個人基本資訊</span>
                             </div>
                         </h3>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">學生姓名 *</label>
-                            <input type="text" id="student_name" name="student_name" required 
-                                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                                placeholder="例如：王小明 / David Wang">
+                        <div id="student-fields" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="學生姓名 *" data-en="Student Name *">學生姓名 *</label>
+                                <input type="text" id="student_name" name="student_name" required 
+                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                    data-zh-ph="例如：王小明" data-en-ph="e.g., David Wang" placeholder="例如：王小明">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="學生電子郵件 *" data-en="Student Email *">學生電子郵件 *</label>
+                                <input type="email" id="student_email" name="student_email" required 
+                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                    data-zh-ph="例如：david@example.com" data-en-ph="e.g., david@example.com" placeholder="例如：david@example.com">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="國籍 *" data-en="Citizenship *">國籍 *</label>
+                                <input type="text" id="citizenship" name="citizenship" required 
+                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                    data-zh-ph="例如：台灣" data-en-ph="e.g., Taiwan" placeholder="例如：台灣">
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">學生電子郵件 *</label>
-                            <input type="email" id="student_email" name="student_email" required 
-                                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                                placeholder="例如：david.wang@example.com">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">國籍 *</label>
-                            <input type="text" id="citizenship" name="citizenship" required 
-                                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                                placeholder="例如：台灣 / Taiwan">
+                        <div id="parent-fields" class="space-y-4 hidden">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="家長姓名 *" data-en="Parent Name *">家長姓名 *</label>
+                                <input type="text" id="parent_name" name="parent_name"
+                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                    data-zh-ph="例如：王媽媽" data-en-ph="e.g., Alice Wang" placeholder="例如：王媽媽">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="家長電子郵件 *" data-en="Parent Email *">家長電子郵件 *</label>
+                                <input type="email" id="parent_email" name="parent_email"
+                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                    data-zh-ph="例如：parent@example.com" data-en-ph="e.g., parent@example.com" placeholder="例如：parent@example.com">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="與學生關係 *" data-en="Relationship to Student *">與學生關係 *</label>
+                                <input type="text" id="relationship" name="relationship"
+                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                    data-zh-ph="例如：母親 / 父親" data-en-ph="e.g., Mother / Father" placeholder="例如：母親">
+                            </div>
+                            <div class="border-t pt-4">
+                                <p class="text-sm text-gray-500 mb-2" data-zh="學生聯絡資料" data-en="Student Contact">學生聯絡資料</p>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="學生姓名 *" data-en="Student Name *">學生姓名 *</label>
+                                <input type="text" id="child_name" name="child_name"
+                                    class="w-full p-3 mb-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                    data-zh-ph="例如：王小明" data-en-ph="e.g., David Wang" placeholder="例如：王小明">
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="學生電子郵件 *" data-en="Student Email *">學生電子郵件 *</label>
+                                <input type="email" id="child_email" name="child_email"
+                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                    data-zh-ph="例如：david@example.com" data-en-ph="e.g., david@example.com" placeholder="例如：david@example.com">
+                            </div>
                         </div>
                     </div>
 
@@ -135,39 +165,39 @@
                         <h3 class="text-lg font-semibold text-gray-800 mb-4">
                             <div class="flex items-center mb-2">
                                 <span class="w-6 h-6 bg-yellow-400 text-gray-800 rounded-full flex items-center justify-center text-sm mr-2">2</span>
-                                學術背景
+                                <span data-zh="學術背景" data-en="Academic Background">學術背景</span>
                             </div>
                         </h3>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">GPA (滿分4.0) *</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="GPA (滿分4.0) *" data-en="GPA (out of 4.0) *">GPA (滿分4.0) *</label>
                             <input type="number" id="gpa" name="gpa" step="0.1" min="0" max="4" required 
                                 class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                                placeholder="例如：3.8">
+                                data-zh-ph="例如：3.8" data-en-ph="e.g., 3.8" placeholder="例如：3.8">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">目標學位 *</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="目標學位 *" data-en="Target Degree *">目標學位 *</label>
                             <select id="degree" name="degree" required 
                                 class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent">
-                                <option value="">請選擇</option>
-                                <option value="bachelor">學士</option>
-                                <option value="master">碩士</option>
-                                <option value="phd">博士</option>
+                                <option value="" data-zh="請選擇" data-en="Please select">請選擇</option>
+                                <option value="bachelor" data-zh="學士" data-en="Bachelor's">學士</option>
+                                <option value="master" data-zh="碩士" data-en="Master's">碩士</option>
+                                <option value="phd" data-zh="博士" data-en="PhD">博士</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">目標國家 *</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="目標國家 *" data-en="Target Countries *">目標國家 *</label>
                             <div class="flex flex-wrap gap-2">
                                 <label class="flex items-center">
                                     <input type="checkbox" name="countries" value="us" class="mr-2">
-                                    美國
+                                    <span data-zh="美國" data-en="USA">美國</span>
                                 </label>
                                 <label class="flex items-center">
                                     <input type="checkbox" name="countries" value="uk" class="mr-2">
-                                    英國
+                                    <span data-zh="英國" data-en="UK">英國</span>
                                 </label>
                                 <label class="flex items-center">
                                     <input type="checkbox" name="countries" value="ca" class="mr-2">
-                                    加拿大
+                                    <span data-zh="加拿大" data-en="Canada">加拿大</span>
                                 </label>
                             </div>
                         </div>
@@ -178,20 +208,32 @@
                         <h3 class="text-lg font-semibold text-gray-800 mb-4">
                             <div class="flex items-center mb-2">
                                 <span class="w-6 h-6 bg-yellow-400 text-gray-800 rounded-full flex items-center justify-center text-sm mr-2">3</span>
-                                預算和時間
+                                <span data-zh="預算和時間" data-en="Budget and Time">預算和時間</span>
                             </div>
                         </h3>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">預算 (每年學費+生活費，單位：美元) *</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="預算 (每年學費+生活費，單位：美元) *" data-en="Budget (Annual tuition + living expenses, USD) *">預算 (每年學費+生活費，單位：美元) *</label>
                             <input type="number" id="budget" name="budget" required 
                                 class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                                placeholder="例如：50000">
+                                data-zh-ph="例如：50000" data-en-ph="e.g., 50000" placeholder="例如：50000">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">目標入學時間 *</label>
-                            <input type="text" id="target_intake" name="target_intake" required 
-                                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                                placeholder="例如：2026年秋季">
+                            <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="目標入學時間 *" data-en="Target Intake Time *">目標入學時間 *</label>
+                            <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                                <select id="intake_semester" name="intake_semester" required 
+                                    class="w-full sm:w-1/3 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent">
+                                    <option value="" data-zh="選擇學期" data-en="Select Semester">選擇學期</option>
+                                    <option value="fall" data-zh="秋季" data-en="Fall">秋季</option>
+                                    <option value="spring" data-zh="春季" data-en="Spring">春季</option>
+                                    <option value="summer" data-zh="夏季" data-en="Summer">夏季</option>
+                                    <option value="winter" data-zh="冬季" data-en="Winter">冬季</option>
+                                </select>
+                                <select id="intake_year" name="intake_year" required 
+                                    class="w-full sm:w-2/3 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent">
+                                    <option value="" data-zh="選擇年份" data-en="Select Year">選擇年份</option>
+                                </select>
+                            </div>
+                            <input type="hidden" id="target_intake" name="target_intake">
                         </div>
                     </div>
 
@@ -200,23 +242,24 @@
                         <h3 class="text-lg font-semibold text-gray-800 mb-4">
                             <div class="flex items-center mb-2">
                                 <span class="w-6 h-6 bg-yellow-400 text-gray-800 rounded-full flex items-center justify-center text-sm mr-2">4</span>
-                                選擇您的身份
+                                <span data-zh="選擇您的身份" data-en="Choose Your Role">選擇您的身份</span>
                             </div>
                         </h3>
-                        <div class="flex space-x-4">
+                        <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
                             <button type="button" onclick="selectRole('student')" id="role-student" 
-                                    class="flex-1 px-6 py-3 bg-blue-500 text-white rounded-lg font-medium transition-colors">
+                                    class="flex-1 px-4 sm:px-6 py-3 bg-blue-500 text-white rounded-lg font-medium transition-colors text-sm sm:text-base">
                                 <span data-zh="👨‍🎓 我是學生" data-en="👨‍🎓 I am a Student">👨‍🎓 我是學生</span>
                             </button>
                             <button type="button" onclick="selectRole('parent')" id="role-parent" 
-                                    class="flex-1 px-6 py-3 bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors hover:bg-gray-400">
+                                    class="flex-1 px-4 sm:px-6 py-3 bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors hover:bg-gray-400 text-sm sm:text-base">
                                 <span data-zh="👨‍👩‍👧‍👦 我是家長" data-en="👨‍👩‍👧‍👦 I am a Parent">👨‍👩‍👧‍👦 我是家長</span>
                             </button>
                         </div>
                     </div>
 
                     <button type="submit" 
-                            class="w-full bg-yellow-400 text-gray-800 py-3 px-6 rounded-lg font-medium hover:bg-yellow-500 transition-colors duration-200 text-lg shadow-lg">
+                            class="w-full bg-yellow-400 text-gray-800 py-3 px-6 rounded-lg font-medium hover:bg-yellow-500 transition-colors duration-200 text-lg shadow-lg"
+                            data-zh="開始與AI顧問對話" data-en="Start Chat with AI Advisor">
                         開始與AI顧問對話
                     </button>
                 </form>
@@ -254,17 +297,17 @@
                 </div>
             </main>
 
-            <footer class="p-4 border-t border-gray-200">
-                <div class="flex space-x-2">
+            <footer class="p-3 sm:p-4 border-t border-gray-200">
+                <div id="quick-actions" class="flex flex-wrap gap-2 mb-3"></div>
+                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                     <input type="text" id="message-input" 
-                           class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                           class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm sm:text-base"
                            placeholder="請輸入您的問題...">
                     <button id="send-btn" 
-                            class="px-6 py-3 bg-yellow-400 text-gray-800 rounded-lg font-medium hover:bg-yellow-500 transition-colors">
-                        發送
-                    </button>
+                            class="px-4 sm:px-6 py-3 bg-yellow-400 text-gray-800 rounded-lg font-medium hover:bg-yellow-500 transition-colors text-sm sm:text-base"
+                            data-zh="發送" data-en="Send">發送</button>
                 </div>
-                <p class="text-xs text-gray-500 mt-2 text-center">按 Enter 發送</p>
+                <p class="text-xs text-gray-500 mt-2 text-center" data-zh="按 Enter 發送" data-en="Press Enter to send">按 Enter 發送</p>
             </footer>
         </div>
     </div>
@@ -289,8 +332,10 @@
             // 檢查登入狀態
             checkAuthStatus();
             
+            // 初始化年份選項
+            initializeYearOptions();
+            
             // 綁定事件
-            document.getElementById('start-intake-btn').addEventListener('click', showSetupPage);
             document.getElementById('back-to-home').addEventListener('click', showLoginPage);
             document.getElementById('back-to-setup').addEventListener('click', showSetupPage);
             document.getElementById('setup-form').addEventListener('submit', handleSetupSubmit);
@@ -300,6 +345,10 @@
                     sendMessage();
                 }
             });
+            
+            // 綁定日期選擇事件
+            document.getElementById('intake_semester').addEventListener('change', updateTargetIntake);
+            document.getElementById('intake_year').addEventListener('change', updateTargetIntake);
         });
 
         // 檢查認證狀態
@@ -385,6 +434,52 @@
             window.location.href = `${window.__CONFIG__.API_BASE.replace('/api/v1', '')}/auth/logout`;
         }
 
+        // 跳過登入
+        function skipLogin() {
+            // 創建一個假的 JWT token 用於測試
+            const fakeToken = 'fake-jwt-token-for-testing';
+            localStorage.setItem('jwt', fakeToken);
+            showSetupPage();
+        }
+
+        // 初始化年份選項
+        function initializeYearOptions() {
+            const yearSelect = document.getElementById('intake_year');
+            const currentYear = new Date().getFullYear();
+            
+            // 生成未來 5 年的選項
+            for (let i = 0; i < 5; i++) {
+                const year = currentYear + i;
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                option.setAttribute('data-zh', year);
+                option.setAttribute('data-en', year);
+                yearSelect.appendChild(option);
+            }
+        }
+
+        // 更新目標入學時間
+        function updateTargetIntake() {
+            const semester = document.getElementById('intake_semester').value;
+            const year = document.getElementById('intake_year').value;
+            const targetIntakeInput = document.getElementById('target_intake');
+            
+            if (semester && year) {
+                const semesterText = currentLanguage === 'en' 
+                    ? semester.charAt(0).toUpperCase() + semester.slice(1)
+                    : semester === 'fall' ? '秋季' : semester === 'spring' ? '春季' : semester === 'summer' ? '夏季' : '冬季';
+                
+                const intakeText = currentLanguage === 'en' 
+                    ? `${semesterText} ${year}`
+                    : `${year}年${semesterText}`;
+                
+                targetIntakeInput.value = intakeText;
+            } else {
+                targetIntakeInput.value = '';
+            }
+        }
+
         // 語言切換
         function switchLanguage(lang) {
             currentLanguage = lang;
@@ -394,6 +489,21 @@
                 const text = el.getAttribute(`data-${currentLanguage}`);
                 if (text) el.textContent = text;
             });
+            // 更新 placeholder
+            const inputs = document.querySelectorAll('[data-zh-ph]');
+            inputs.forEach(input => {
+                const placeholder = input.getAttribute(`data-${currentLanguage}-ph`);
+                if (placeholder) input.placeholder = placeholder;
+            });
+            // 更新 select 選項
+            const options = document.querySelectorAll('option[data-zh]');
+            options.forEach(option => {
+                const text = option.getAttribute(`data-${currentLanguage}`);
+                if (text) option.textContent = text;
+            });
+            
+            // 更新目標入學時間顯示
+            updateTargetIntake();
             // 更新語言切換按鈕樣式
             document.getElementById('lang-switch-zh').classList.toggle('bg-blue-500', lang === 'zh');
             document.getElementById('lang-switch-zh').classList.toggle('bg-gray-200', lang !== 'zh');
@@ -412,6 +522,11 @@
             document.getElementById('role-student').classList.toggle('bg-gray-300', role !== 'student');
             document.getElementById('role-parent').classList.toggle('bg-blue-500', role === 'parent');
             document.getElementById('role-parent').classList.toggle('bg-gray-300', role !== 'parent');
+
+            // 切換欄位顯示
+            document.getElementById('student-fields').classList.toggle('hidden', role !== 'student');
+            document.getElementById('parent-fields').classList.toggle('hidden', role !== 'parent');
+            loadQuickActions();
         }
 
         // 頁面切換
@@ -431,6 +546,9 @@
             document.getElementById('login-page').classList.add('hidden');
             document.getElementById('setup-page').classList.add('hidden');
             document.getElementById('chat-page').classList.remove('hidden');
+            loadQuickActions();
+            // 自動發送打招呼訊息
+            sendWelcomeMessage();
         }
 
         // 處理設定提交
@@ -438,20 +556,45 @@
             e.preventDefault();
             
             const formData = new FormData(e.target);
-            const data = {
-                student_name: formData.get('student_name'),
-                student_email: formData.get('student_email'),
-                citizenship: formData.get('citizenship'),
-                gpa: parseFloat(formData.get('gpa')),
-                degree: formData.get('degree'),
-                countries: Array.from(document.querySelectorAll('input[name="countries"]:checked')).map(cb => cb.value),
-                budget: parseInt(formData.get('budget')),
-                target_intake: formData.get('target_intake'),
-                user_role: currentRole
-            };
+            let data = {};
+            
+            if (currentRole === 'student') {
+                data = {
+                    student_name: formData.get('student_name'),
+                    student_email: formData.get('student_email'),
+                    citizenship: formData.get('citizenship'),
+                    gpa: parseFloat(formData.get('gpa')),
+                    degree: formData.get('degree'),
+                    countries: Array.from(document.querySelectorAll('input[name="countries"]:checked')).map(cb => cb.value),
+                    budget: parseInt(formData.get('budget')),
+                    target_intake: formData.get('target_intake'),
+                    user_role: currentRole
+                };
+            } else {
+                data = {
+                    parent_name: formData.get('parent_name'),
+                    parent_email: formData.get('parent_email'),
+                    relationship: formData.get('relationship'),
+                    child_name: formData.get('child_name'),
+                    child_email: formData.get('child_email'),
+                    gpa: parseFloat(formData.get('gpa')),
+                    degree: formData.get('degree'),
+                    countries: Array.from(document.querySelectorAll('input[name="countries"]:checked')).map(cb => cb.value),
+                    budget: parseInt(formData.get('budget')),
+                    target_intake: formData.get('target_intake'),
+                    user_role: currentRole
+                };
+            }
 
             try {
-                const authHeader = localStorage.getItem('jwt') ? { 'Authorization': `Bearer ${localStorage.getItem('jwt')}` } : {};
+                // 檢查是否有 JWT token
+                const jwt = localStorage.getItem('jwt');
+                if (!jwt) {
+                    alert(currentLanguage === 'en' ? 'Please login first or skip login to continue.' : '請先登入或跳過登入繼續');
+                    return;
+                }
+                
+                const authHeader = { 'Authorization': `Bearer ${jwt}` };
                 const response = await fetch(`${window.__CONFIG__.API_BASE}/intake`, {
                     method: 'POST',
                     headers: {
@@ -497,7 +640,8 @@
                     body: JSON.stringify({
                         profile_id: profileId,
                         message: message,
-                        user_role: currentRole
+                        user_role: currentRole,
+                        language: currentLanguage
                     })
                 });
 
@@ -522,6 +666,67 @@
             messageDiv.innerHTML = `<p>${message}</p>`;
             chatContainer.appendChild(messageDiv);
             chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // 發送歡迎訊息
+        async function sendWelcomeMessage() {
+            if (!profileId) return;
+            
+            try {
+                const authHeader = localStorage.getItem('jwt') ? { 'Authorization': `Bearer ${localStorage.getItem('jwt')}` } : {};
+                const response = await fetch(`${window.__CONFIG__.API_BASE}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...authHeader
+                    },
+                    body: JSON.stringify({
+                        profile_id: profileId,
+                        message: '', // 空訊息觸發歡迎回覆
+                        user_role: currentRole,
+                        language: currentLanguage
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.ok) {
+                    addMessage(result.data.response, 'ai');
+                } else {
+                    console.error('Welcome message failed:', result);
+                }
+            } catch (error) {
+                console.error('Welcome message error:', error);
+            }
+        }
+
+        // 載入快速問答按鈕（依身份）
+        function loadQuickActions() {
+            const qa = document.getElementById('quick-actions');
+            if (!qa) return;
+            qa.innerHTML = '';
+            const studentBtns = [
+                { zh: '申請時間規劃', en: 'Timeline planning', q: '請幫我規劃申請時間表' },
+                { zh: '推薦學校/科系', en: 'Recommend schools/majors', q: '依我的背景推薦學校與科系' },
+                { zh: '獎學金建議', en: 'Scholarships', q: '有哪些適合我的獎學金?' }
+            ];
+            const parentBtns = [
+                { zh: '費用/預算', en: 'Costs/Budget', q: '一年總費用預估與預算建議' },
+                { zh: 'ROI/投報', en: 'ROI', q: '幫我估算不同方案的投資回收期' },
+                { zh: '住宿/保險/安全', en: 'Housing/Insurance/Safety', q: '住宿、保險與安全注意事項' }
+            ];
+            const list = currentLanguage === 'en' ? (currentRole === 'parent' ? parentBtns : studentBtns).map(b => ({ label: b.en, q: b.q })) : (currentRole === 'parent' ? parentBtns : studentBtns).map(b => ({ label: b.zh, q: b.q }));
+            list.forEach(b => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'px-3 py-1.5 text-sm bg-yellow-100 hover:bg-yellow-200 rounded border border-yellow-200';
+                btn.textContent = b.label;
+                btn.onclick = () => {
+                    document.getElementById('message-input').value = b.q;
+                    sendMessage();
+                };
+                qa.appendChild(btn);
+            });
         }
     </script>
 </body>
