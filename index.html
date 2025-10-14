@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI 留學顧問</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script>
         // 內嵌配置
         window.__CONFIG__ = {
@@ -56,7 +57,7 @@
                     <button onclick="skipLogin()" class="w-full flex items-center justify-center px-4 py-3 mb-3 bg-yellow-400 text-gray-800 rounded-lg hover:bg-yellow-500 transition-colors font-medium shadow-md">
                         <span data-zh="跳過登入，直接開始" data-en="Skip login, start directly">跳過登入，直接開始</span>
                     </button>
-                    <button onclick="loginWithGoogle()" class="w-full flex items-center justify-center px-4 py-3 mb-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium shadow-md">
+                    <button onclick="loginWithGoogle()" id="google-login-btn" class="w-full flex items-center justify-center px-4 py-3 mb-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium shadow-md">
                         <img src="https://img.icons8.com/color/24/000000/google-logo.png" alt="Google" class="w-5 h-5 mr-2">
                         <span data-zh="使用 Google 登入" data-en="Login with Google">使用 Google 登入</span>
                     </button>
@@ -276,6 +277,15 @@
 
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
+            // 取得 Google Client ID 以初始化 GIS
+            fetch(`${window.__CONFIG__.API_BASE}/auth/config`)
+                .then(r => r.json())
+                .then(cfg => {
+                    if (cfg && cfg.ok && cfg.googleClientId) {
+                        window.__GOOGLE_CLIENT_ID__ = cfg.googleClientId;
+                    }
+                })
+                .catch(() => {});
             // 檢查登入狀態
             checkAuthStatus();
             
@@ -327,7 +337,44 @@
 
         // 登入功能
         function loginWithGoogle() {
-            alert(currentLanguage === 'en' ? 'Login is temporarily unavailable. Please click "Skip login, start directly".' : '登入功能暫時不可用，請點「跳過登入，直接開始」');
+            if (!window.__GOOGLE_CLIENT_ID__) {
+                alert(currentLanguage === 'en' ? 'Google login is not ready.' : 'Google 登入尚未就緒');
+                return;
+            }
+            const client = google.accounts.oauth2.initTokenClient({
+                client_id: window.__GOOGLE_CLIENT_ID__,
+                scope: 'openid email profile',
+                callback: async (response) => {
+                    try {
+                        const idToken = response.access_token ? undefined : undefined; // token client 不給 id_token
+                    } catch (e) {}
+                }
+            });
+            // 改用 one-tap 的 ID token API
+            google.accounts.id.initialize({
+                client_id: window.__GOOGLE_CLIENT_ID__,
+                callback: async (resp) => {
+                    try {
+                        const idToken = resp.credential;
+                        const r = await fetch(`${window.__CONFIG__.API_BASE}/auth/google/verify`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ idToken })
+                        });
+                        const data = await r.json();
+                        if (data.ok && data.token) {
+                            localStorage.setItem('jwt', data.token);
+                            showUserInfo(data.user || { name: 'User' });
+                            showSetupPage();
+                        } else {
+                            alert(currentLanguage === 'en' ? 'Login failed.' : '登入失敗');
+                        }
+                    } catch (err) {
+                        alert(currentLanguage === 'en' ? 'Login failed.' : '登入失敗');
+                    }
+                }
+            });
+            google.accounts.id.prompt();
         }
 
         function loginWithLine() {
@@ -404,10 +451,12 @@
             };
 
             try {
+                const authHeader = localStorage.getItem('jwt') ? { 'Authorization': `Bearer ${localStorage.getItem('jwt')}` } : {};
                 const response = await fetch(`${window.__CONFIG__.API_BASE}/intake`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        ...authHeader
                     },
                     body: JSON.stringify(data)
                 });
@@ -438,10 +487,12 @@
             input.value = '';
 
             try {
+                const authHeader = localStorage.getItem('jwt') ? { 'Authorization': `Bearer ${localStorage.getItem('jwt')}` } : {};
                 const response = await fetch(`${window.__CONFIG__.API_BASE}/chat`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        ...authHeader
                     },
                     body: JSON.stringify({
                         profile_id: profileId,

@@ -2,5 +2,7 @@
   "name": "ai-study-advisor-frontend",
   "type": "static",
   "rootDirectory": ".",
-  "domains": ["aistudent.zeabur.app"]
+  "domains": [
+    "aistudent.zeabur.app"
+  ]
 }
