@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 留學顧問智能體</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // 內嵌配置
+        window.__CONFIG__ = {
+            API_BASE: 'https://aistudentbackend.zeabur.app/api/v1'
+        };
+    </script>
+    <style>
+        /* 自定義樣式 */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .hidden { display: none; }
+        .block { display: block; }
+        
+        .message-bubble {
+            @apply max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg px-4 py-2 rounded-2xl;
+        }
+        
+        .message-user {
+            @apply bg-yellow-400 text-gray-800 ml-auto;
+        }
+        
+        .message-ai {
+            @apply bg-yellow-50 text-gray-800 mr-auto border border-yellow-200;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans antialiased text-gray-800">
+    <!-- 登入頁面 -->
+    <div id="login-page" class="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-yellow-100 to-blue-100">
+        <div class="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full text-center fade-in">
+            <h1 class="text-4xl font-extrabold text-gray-900 mb-4">AI 留學顧問智能體</h1>
+            <p class="text-lg text-gray-600 mb-8">您的個人化留學規劃專家</p>
+            
+            <div id="auth-section" class="mb-6">
+                <div id="user-info" class="hidden mb-4">
+                    <img id="user-avatar" class="w-16 h-16 rounded-full mx-auto mb-2" src="" alt="User Avatar">
+                    <p class="text-xl font-semibold">歡迎，<span id="user-name"></span>!</p>
+                    <button onclick="logout()" class="mt-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">登出</button>
+                </div>
+                <div id="login-buttons">
+                    <p class="text-gray-700 mb-4">請登入以繼續</p>
+                    <button onclick="loginWithGoogle()" class="w-full flex items-center justify-center px-4 py-3 mb-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium shadow-md">
+                        <img src="https://img.icons8.com/color/24/000000/google-logo.png" alt="Google" class="w-5 h-5 mr-2">
+                        使用 Google 登入
+                    </button>
+                    <button onclick="loginWithLine()" class="w-full flex items-center justify-center px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium shadow-md">
+                        <img src="https://img.icons8.com/color/24/000000/line-me.png" alt="LINE" class="w-5 h-5 mr-2">
+                        使用 LINE 登入
+                    </button>
+                </div>
+            </div>
+
+            <button id="start-intake-btn" 
+                    class="w-full bg-yellow-400 text-gray-800 py-3 px-6 rounded-lg font-medium hover:bg-yellow-500 transition-colors duration-200 text-lg shadow-lg">
+                開始測評
+            </button>
+
+            <!-- 語言切換 -->
+            <div class="mt-6 flex justify-center space-x-4">
+                <button onclick="switchLanguage('zh')" id="lang-switch-zh" 
+                        class="px-4 py-2 text-sm rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors">
+                    中文
+                </button>
+                <button onclick="switchLanguage('en')" id="lang-switch-en" 
+                        class="px-4 py-2 text-sm rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors">
+                    English
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 設定頁面 -->
+    <div id="setup-page" class="min-h-screen hidden">
+        <div class="max-w-2xl mx-auto bg-white min-h-screen">
+            <header class="bg-gradient-to-r from-yellow-400 to-yellow-300 text-gray-800 p-4 sm:p-6 text-center relative">
+                <button id="back-to-home" class="absolute left-2 sm:left-4 top-4 sm:top-6 text-gray-800 hover:text-gray-600 transition-colors text-sm sm:text-base">
+                    ← 返回首頁
+                </button>
+                <h1 class="text-lg sm:text-xl lg:text-2xl font-bold mb-1 sm:mb-2">設定您的留學需求</h1>
+                <p class="text-gray-600 text-sm sm:text-base">讓我們先了解您的基本資訊</p>
+            </header>
+
+            <!-- Setup Form -->
+            <main class="p-6">
+                <form id="setup-form" class="space-y-6">
+                    <!-- 個人基本資訊 -->
+                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                            <div class="flex items-center mb-2">
+                                <span class="w-6 h-6 bg-yellow-400 text-gray-800 rounded-full flex items-center justify-center text-sm mr-2">1</span>
+                                個人基本資訊
+                            </div>
+                        </h3>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">學生姓名 *</label>
+                            <input type="text" id="student_name" name="student_name" required 
+                                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                placeholder="例如：王小明 / David Wang">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">學生電子郵件 *</label>
+                            <input type="email" id="student_email" name="student_email" required 
+                                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                placeholder="例如：david.wang@example.com">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">國籍 *</label>
+                            <input type="text" id="citizenship" name="citizenship" required 
+                                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                placeholder="例如：台灣 / Taiwan">
+                        </div>
+                    </div>
+
+                    <!-- 學術背景 -->
+                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                            <div class="flex items-center mb-2">
+                                <span class="w-6 h-6 bg-yellow-400 text-gray-800 rounded-full flex items-center justify-center text-sm mr-2">2</span>
+                                學術背景
+                            </div>
+                        </h3>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">GPA (滿分4.0) *</label>
+                            <input type="number" id="gpa" name="gpa" step="0.1" min="0" max="4" required 
+                                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                placeholder="例如：3.8">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">目標學位 *</label>
+                            <select id="degree" name="degree" required 
+                                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent">
+                                <option value="">請選擇</option>
+                                <option value="bachelor">學士</option>
+                                <option value="master">碩士</option>
+                                <option value="phd">博士</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">目標國家 *</label>
+                            <div class="flex flex-wrap gap-2">
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="countries" value="us" class="mr-2">
+                                    美國
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="countries" value="uk" class="mr-2">
+                                    英國
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="countries" value="ca" class="mr-2">
+                                    加拿大
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 預算和時間 -->
+                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                            <div class="flex items-center mb-2">
+                                <span class="w-6 h-6 bg-yellow-400 text-gray-800 rounded-full flex items-center justify-center text-sm mr-2">3</span>
+                                預算和時間
+                            </div>
+                        </h3>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">預算 (每年學費+生活費，單位：美元) *</label>
+                            <input type="number" id="budget" name="budget" required 
+                                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                placeholder="例如：50000">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">目標入學時間 *</label>
+                            <input type="text" id="target_intake" name="target_intake" required 
+                                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                placeholder="例如：2026年秋季">
+                        </div>
+                    </div>
+
+                    <!-- 角色選擇 -->
+                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                            <div class="flex items-center mb-2">
+                                <span class="w-6 h-6 bg-yellow-400 text-gray-800 rounded-full flex items-center justify-center text-sm mr-2">4</span>
+                                選擇您的身份
+                            </div>
+                        </h3>
+                        <div class="flex space-x-4">
+                            <button type="button" onclick="selectRole('student')" id="role-student" 
+                                    class="flex-1 px-6 py-3 bg-blue-500 text-white rounded-lg font-medium transition-colors">
+                                👨‍🎓 學生模式
+                            </button>
+                            <button type="button" onclick="selectRole('parent')" id="role-parent" 
+                                    class="flex-1 px-6 py-3 bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors hover:bg-gray-400">
+                                👨‍👩‍👧‍👦 家長模式
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" 
+                            class="w-full bg-yellow-400 text-gray-800 py-3 px-6 rounded-lg font-medium hover:bg-yellow-500 transition-colors duration-200 text-lg shadow-lg">
+                        開始與AI顧問對話
+                    </button>
+                </form>
+            </main>
+        </div>
+    </div>
+
+    <!-- 聊天頁面 -->
+    <div id="chat-page" class="min-h-screen hidden">
+        <div class="max-w-4xl mx-auto bg-white min-h-screen flex flex-col">
+            <header class="bg-gradient-to-r from-yellow-400 to-yellow-300 text-gray-800 p-4 text-center relative">
+                <button id="back-to-setup" class="absolute left-4 top-4 text-gray-800 hover:text-gray-600 transition-colors">
+                    ← 重新設定
+                </button>
+                <h1 class="text-xl font-bold">AI 留學顧問</h1>
+                <p class="text-sm">正在為您提供專業建議</p>
+                <div class="flex items-center justify-center mt-2">
+                    <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                    <span class="text-sm">在線</span>
+                </div>
+            </header>
+
+            <main class="flex-1 p-4 overflow-y-auto" id="chat-container">
+                <div class="space-y-4">
+                    <div class="message-bubble message-ai">
+                        <p>您好！我是您的AI留學顧問。我已經了解了您的基本資訊，現在讓我們深入討論您的留學計劃吧！</p>
+                        <p class="mt-2">您可以問我任何關於留學的問題，比如：</p>
+                        <ul class="mt-2 list-disc list-inside text-sm">
+                            <li>推薦適合的學校和專業</li>
+                            <li>申請流程和時間規劃</li>
+                            <li>獎學金申請建議</li>
+                            <li>簽證和住宿資訊</li>
+                        </ul>
+                    </div>
+                </div>
+            </main>
+
+            <footer class="p-4 border-t border-gray-200">
+                <div class="flex space-x-2">
+                    <input type="text" id="message-input" 
+                           class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                           placeholder="請輸入您的問題...">
+                    <button id="send-btn" 
+                            class="px-6 py-3 bg-yellow-400 text-gray-800 rounded-lg font-medium hover:bg-yellow-500 transition-colors">
+                        發送
+                    </button>
+                </div>
+                <p class="text-xs text-gray-500 mt-2 text-center">按 Enter 發送</p>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        // 全局變量
+        let currentRole = 'student';
+        let currentLanguage = 'zh';
+        let profileId = null;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 檢查登入狀態
+            checkAuthStatus();
+            
+            // 綁定事件
+            document.getElementById('start-intake-btn').addEventListener('click', showSetupPage);
+            document.getElementById('back-to-home').addEventListener('click', showLoginPage);
+            document.getElementById('back-to-setup').addEventListener('click', showSetupPage);
+            document.getElementById('setup-form').addEventListener('submit', handleSetupSubmit);
+            document.getElementById('send-btn').addEventListener('click', sendMessage);
+            document.getElementById('message-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+        });
+
+        // 檢查認證狀態
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch(`${window.__CONFIG__.API_BASE}/auth/status`);
+                const data = await response.json();
+                
+                if (data.ok && data.user) {
+                    showUserInfo(data.user);
+                } else {
+                    showLoginButtons();
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                showLoginButtons();
+            }
+        }
+
+        // 顯示用戶資訊
+        function showUserInfo(user) {
+            document.getElementById('user-info').classList.remove('hidden');
+            document.getElementById('login-buttons').classList.add('hidden');
+            document.getElementById('user-name').textContent = user.name;
+            if (user.avatar) {
+                document.getElementById('user-avatar').src = user.avatar;
+            }
+        }
+
+        // 顯示登入按鈕
+        function showLoginButtons() {
+            document.getElementById('user-info').classList.add('hidden');
+            document.getElementById('login-buttons').classList.remove('hidden');
+        }
+
+        // 登入功能
+        function loginWithGoogle() {
+            window.location.href = `${window.__CONFIG__.API_BASE.replace('/api/v1', '')}/auth/google`;
+        }
+
+        function loginWithLine() {
+            window.location.href = `${window.__CONFIG__.API_BASE.replace('/api/v1', '')}/auth/line`;
+        }
+
+        function logout() {
+            window.location.href = `${window.__CONFIG__.API_BASE.replace('/api/v1', '')}/auth/logout`;
+        }
+
+        // 語言切換
+        function switchLanguage(lang) {
+            currentLanguage = lang;
+            document.getElementById('lang-switch-zh').classList.toggle('bg-gray-200', lang !== 'zh');
+            document.getElementById('lang-switch-zh').classList.toggle('bg-blue-500', lang === 'zh');
+            document.getElementById('lang-switch-en').classList.toggle('bg-gray-200', lang !== 'en');
+            document.getElementById('lang-switch-en').classList.toggle('bg-blue-500', lang === 'en');
+        }
+
+        // 角色選擇
+        function selectRole(role) {
+            currentRole = role;
+            document.getElementById('role-student').classList.toggle('bg-blue-500', role === 'student');
+            document.getElementById('role-student').classList.toggle('bg-gray-300', role !== 'student');
+            document.getElementById('role-parent').classList.toggle('bg-blue-500', role === 'parent');
+            document.getElementById('role-parent').classList.toggle('bg-gray-300', role !== 'parent');
+        }
+
+        // 頁面切換
+        function showLoginPage() {
+            document.getElementById('login-page').classList.remove('hidden');
+            document.getElementById('setup-page').classList.add('hidden');
+            document.getElementById('chat-page').classList.add('hidden');
+        }
+
+        function showSetupPage() {
+            document.getElementById('login-page').classList.add('hidden');
+            document.getElementById('setup-page').classList.remove('hidden');
+            document.getElementById('chat-page').classList.add('hidden');
+        }
+
+        function showChatPage() {
+            document.getElementById('login-page').classList.add('hidden');
+            document.getElementById('setup-page').classList.add('hidden');
+            document.getElementById('chat-page').classList.remove('hidden');
+        }
+
+        // 處理設定提交
+        async function handleSetupSubmit(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = {
+                student_name: formData.get('student_name'),
+                student_email: formData.get('student_email'),
+                citizenship: formData.get('citizenship'),
+                gpa: parseFloat(formData.get('gpa')),
+                degree: formData.get('degree'),
+                countries: Array.from(document.querySelectorAll('input[name="countries"]:checked')).map(cb => cb.value),
+                budget: parseInt(formData.get('budget')),
+                target_intake: formData.get('target_intake'),
+                user_role: currentRole
+            };
+
+            try {
+                const response = await fetch(`${window.__CONFIG__.API_BASE}/intake`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                
+                if (result.ok) {
+                    profileId = result.data.profile_id;
+                    showChatPage();
+                } else {
+                    alert('提交失敗：' + result.error);
+                }
+            } catch (error) {
+                console.error('Setup submission failed:', error);
+                alert('提交失敗，請檢查網路連接');
+            }
+        }
+
+        // 發送消息
+        async function sendMessage() {
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
+            
+            if (!message) return;
+
+            // 添加用戶消息到聊天
+            addMessage(message, 'user');
+            input.value = '';
+
+            try {
+                const response = await fetch(`${window.__CONFIG__.API_BASE}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        profile_id: profileId,
+                        message: message,
+                        user_role: currentRole
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.ok) {
+                    addMessage(result.data.response, 'ai');
+                } else {
+                    addMessage('抱歉，我無法處理您的請求。請稍後再試。', 'ai');
+                }
+            } catch (error) {
+                console.error('Chat failed:', error);
+                addMessage('抱歉，網路連接出現問題。請檢查您的網路連接。', 'ai');
+            }
+        }
+
+        // 添加消息到聊天
+        function addMessage(message, sender) {
+            const chatContainer = document.getElementById('chat-container');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message-bubble ${sender === 'user' ? 'message-user' : 'message-ai'}`;
+            messageDiv.innerHTML = `<p>${message}</p>`;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+    </script>
+</body>
+</html>
