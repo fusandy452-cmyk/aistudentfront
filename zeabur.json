@@ -1,9 +1,6 @@
 {
   "name": "ai-study-advisor-frontend",
   "type": "static",
-  "buildCommand": "rm -f package.json",
   "rootDirectory": ".",
-  "domains": [
-    "aistudent.zeabur.app"
-  ]
+  "domains": ["aistudent.zeabur.app"]
 }
