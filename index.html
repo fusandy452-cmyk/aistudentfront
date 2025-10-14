@@ -350,34 +350,34 @@
                         <div class="flex items-center mb-4">
                             <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">AI</div>
                             <div>
-                                <h3 class="font-semibold text-gray-800">AI 留學顧問</h3>
-                                <p class="text-sm text-gray-500">您的專屬留學規劃專家</p>
+                                <h3 class="font-semibold text-gray-800" data-zh="AI 留學顧問" data-en="AI Study Abroad Advisor">AI 留學顧問</h3>
+                                <p class="text-sm text-gray-500" data-zh="您的專屬留學規劃專家" data-en="Your Exclusive Study Abroad Planning Expert">您的專屬留學規劃專家</p>
                             </div>
                         </div>
                         <div class="text-gray-700 leading-relaxed">
-                            <p class="mb-3">🎓 您好！我是您的AI留學顧問。</p>
-                            <p class="mb-3">我已經了解了您的基本資訊，現在讓我們深入討論您的留學計劃吧！</p>
-                            <p class="mb-3">您可以問我任何關於留學的問題，比如：</p>
+                            <p class="mb-3" data-zh="🎓 您好！我是您的AI留學顧問。" data-en="🎓 Hello! I am your AI Study Abroad Advisor.">🎓 您好！我是您的AI留學顧問。</p>
+                            <p class="mb-3" data-zh="我已經了解了您的基本資訊，現在讓我們深入討論您的留學計劃吧！" data-en="I have reviewed your basic information, now let's dive deep into your study abroad planning!">我已經了解了您的基本資訊，現在讓我們深入討論您的留學計劃吧！</p>
+                            <p class="mb-3" data-zh="您可以問我任何關於留學的問題，比如：" data-en="You can ask me any questions about studying abroad, such as:">您可以問我任何關於留學的問題，比如：</p>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
                                 <div class="flex items-center text-sm text-gray-600">
                                     <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                                    推薦適合的學校和專業
+                                    <span data-zh="推薦適合的學校和專業" data-en="School and major recommendations">推薦適合的學校和專業</span>
                                 </div>
                                 <div class="flex items-center text-sm text-gray-600">
                                     <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                                    申請流程和時間規劃
+                                    <span data-zh="申請流程和時間規劃" data-en="Application process and timeline">申請流程和時間規劃</span>
                                 </div>
                                 <div class="flex items-center text-sm text-gray-600">
                                     <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                                    獎學金申請建議
+                                    <span data-zh="獎學金申請建議" data-en="Scholarship application advice">獎學金申請建議</span>
                                 </div>
                                 <div class="flex items-center text-sm text-gray-600">
                                     <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                                    簽證和住宿資訊
+                                    <span data-zh="簽證和住宿資訊" data-en="Visa and accommodation info">簽證和住宿資訊</span>
                                 </div>
                             </div>
                         </div>
-                        <div class="text-xs text-gray-400 mt-3">剛剛</div>
+                        <div class="text-xs text-gray-400 mt-3" data-zh="剛剛" data-en="Just now">剛剛</div>
                     </div>
                 </div>
             </main>
@@ -386,15 +386,17 @@
                 <div class="max-w-4xl mx-auto">
                     <div id="quick-actions" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-4"></div>
                     <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
-                        <input type="text" id="message-input" 
-                               class="flex-1 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base bg-white"
-                               placeholder="告訴我你的留學需求、目標或困惑...">
+                        <textarea id="message-input" rows="2"
+                               class="flex-1 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base bg-white resize-none"
+                               placeholder="告訴我你的留學需求、目標或困惑..."
+                               data-zh-ph="告訴我你的留學需求、目標或困惑..."
+                               data-en-ph="Tell me your study abroad needs, goals, or confusions..."></textarea>
                         <button id="send-btn" 
                                 class="px-6 py-4 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors text-sm sm:text-base flex items-center justify-center">
-                            <span data-zh="分析" data-en="Analyze">分析</span>
+                            <span data-zh="送出" data-en="Send">送出</span>
                         </button>
                     </div>
-                    <p class="text-xs text-gray-500 mt-3 text-center" data-zh="按 Enter 發送" data-en="Press Enter to send">按 Enter 發送</p>
+                    <p class="text-xs text-gray-500 mt-3 text-center" data-zh="按 Ctrl+Enter 發送，Enter 換行" data-en="Press Ctrl+Enter to send, Enter for new line">按 Ctrl+Enter 發送，Enter 換行</p>
                 </div>
             </footer>
         </div>
@@ -429,9 +431,11 @@
             document.getElementById('setup-form').addEventListener('submit', handleSetupSubmit);
             document.getElementById('send-btn').addEventListener('click', sendMessage);
             document.getElementById('message-input').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
+                if (e.key === 'Enter' && e.ctrlKey) {
+                    // Ctrl+Enter 發送訊息
                     sendMessage();
                 }
+                // 單獨按 Enter 只換行，不發送
             });
             
             // 綁定日期選擇事件
@@ -602,15 +606,23 @@
             
             // 更新目標入學時間顯示
             updateTargetIntake();
-            // 更新語言切換按鈕樣式
-            document.getElementById('lang-switch-zh').classList.toggle('bg-blue-500', lang === 'zh');
-            document.getElementById('lang-switch-zh').classList.toggle('bg-gray-200', lang !== 'zh');
-            document.getElementById('lang-switch-zh').classList.toggle('text-white', lang === 'zh');
-            document.getElementById('lang-switch-zh').classList.toggle('text-gray-700', lang !== 'zh');
-            document.getElementById('lang-switch-en').classList.toggle('bg-blue-500', lang === 'en');
-            document.getElementById('lang-switch-en').classList.toggle('bg-gray-200', lang !== 'en');
-            document.getElementById('lang-switch-en').classList.toggle('text-white', lang === 'en');
-            document.getElementById('lang-switch-en').classList.toggle('text-gray-700', lang !== 'en');
+            
+            // 更新語言切換按鈕樣式（如果存在）
+            var zhBtn = document.getElementById('lang-switch-zh');
+            var enBtn = document.getElementById('lang-switch-en');
+            if (zhBtn && enBtn) {
+                zhBtn.classList.toggle('bg-blue-500', lang === 'zh');
+                zhBtn.classList.toggle('bg-gray-200', lang !== 'zh');
+                zhBtn.classList.toggle('text-white', lang === 'zh');
+                zhBtn.classList.toggle('text-gray-700', lang !== 'zh');
+                enBtn.classList.toggle('bg-blue-500', lang === 'en');
+                enBtn.classList.toggle('bg-gray-200', lang !== 'en');
+                enBtn.classList.toggle('text-white', lang === 'en');
+                enBtn.classList.toggle('text-gray-700', lang !== 'en');
+            }
+            
+            // 重新載入快速動作按鈕
+            loadQuickActions();
         }
 
         // 角色選擇
@@ -644,6 +656,10 @@
             document.getElementById('login-page').classList.add('hidden');
             document.getElementById('setup-page').classList.add('hidden');
             document.getElementById('chat-page').classList.remove('hidden');
+            
+            // 更新聊天頁面的語言
+            switchLanguage(currentLanguage);
+            
             loadQuickActions();
             // 自動發送打招呼訊息
             sendWelcomeMessage();
@@ -810,13 +826,16 @@
                     '</div>';
             } else {
                 messageWrapper.className = 'mb-4';
+                var aiTitle = currentLanguage === 'en' ? 'AI Study Abroad Advisor' : 'AI 留學顧問';
+                var aiSubtitle = currentLanguage === 'en' ? 'Your Exclusive Study Abroad Planning Expert' : '您的專屬留學規劃專家';
+                
                 messageWrapper.innerHTML = 
                     '<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">' +
                         '<div class="flex items-center mb-4">' +
                             '<div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">AI</div>' +
                             '<div>' +
-                                '<h3 class="font-semibold text-gray-800">AI 留學顧問</h3>' +
-                                '<p class="text-sm text-gray-500">您的專屬留學規劃專家</p>' +
+                                '<h3 class="font-semibold text-gray-800">' + aiTitle + '</h3>' +
+                                '<p class="text-sm text-gray-500">' + aiSubtitle + '</p>' +
                             '</div>' +
                         '</div>' +
                         '<div class="text-gray-700 leading-relaxed">' + message + '</div>' +
