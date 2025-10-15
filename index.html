@@ -417,9 +417,14 @@
                 .then(cfg => {
                     if (cfg && cfg.ok && cfg.googleClientId) {
                         window.__GOOGLE_CLIENT_ID__ = cfg.googleClientId;
+                        console.log('Google Client ID loaded:', cfg.googleClientId);
+                    } else {
+                        console.warn('Google Client ID not configured');
                     }
                 })
-                .catch(() => {});
+                .catch((error) => {
+                    console.error('Failed to load Google Client ID:', error);
+                });
             // 檢查登入狀態
             checkAuthStatus();
             
@@ -487,9 +492,13 @@
         // 登入功能
         function loginWithGoogle() {
             if (!window.__GOOGLE_CLIENT_ID__) {
-                alert(currentLanguage === 'en' ? 'Google login is not ready.' : 'Google 登入尚未就緒');
+                alert(currentLanguage === 'en' ? 
+                    'Google OAuth is not configured. Please use "Skip login" for now.' : 
+                    'Google OAuth 尚未配置。請先使用「跳過登入」功能。');
                 return;
             }
+            
+            console.log('Attempting Google login with Client ID:', window.__GOOGLE_CLIENT_ID__);
             var client = google.accounts.oauth2.initTokenClient({
                 client_id: window.__GOOGLE_CLIENT_ID__,
                 scope: 'openid email profile',
@@ -958,4 +967,3 @@
     </script>
 </body>
 </html>
-
