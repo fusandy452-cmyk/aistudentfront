@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AI 留學顧問</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -13,11 +13,62 @@
             // 暫時使用測試模式，跳過後端驗證
             TEST_MODE: true
         };
+        
+        // Google OAuth 配置
+        window.__GOOGLE_CLIENT_ID__ = '300123710303-m4j1laa65p664n5vtrdkfvfa7b42c2o6.apps.googleusercontent.com';
     </script>
     <style>
         /* 自定義樣式 */
         .fade-in {
             animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        /* 手機版優化 */
+        @media (max-width: 768px) {
+            .mobile-optimized {
+                font-size: 16px !important; /* 防止 iOS 自動縮放 */
+                -webkit-text-size-adjust: 100%;
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+                -khtml-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+            }
+            
+            .mobile-button {
+                min-height: 44px !important; /* iOS 建議的最小觸控區域 */
+                padding: 12px 16px !important;
+                font-size: 16px !important;
+            }
+            
+            .mobile-input {
+                font-size: 16px !important; /* 防止 iOS 自動縮放 */
+                padding: 12px 16px !important;
+                min-height: 44px !important;
+            }
+            
+            .mobile-text {
+                font-size: 16px !important;
+                line-height: 1.5 !important;
+            }
+            
+            /* 防止雙擊縮放 */
+            * {
+                touch-action: manipulation;
+            }
+            
+            /* 優化聊天介面 */
+            .chat-container {
+                height: calc(100vh - 120px) !important;
+                overflow-y: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+            }
+            
+            .message-bubble {
+                max-width: 85% !important;
+                word-wrap: break-word !important;
+            }
         }
         
         @keyframes fadeIn {
@@ -116,14 +167,14 @@
                 </div>
                 <div id="login-buttons">
                     <p class="text-gray-700 mb-4" data-zh="請登入以繼續" data-en="Please login to continue">請登入以繼續</p>
-                    <button onclick="skipLogin()" class="w-full flex items-center justify-center px-4 py-3 mb-3 bg-yellow-400 text-gray-800 rounded-lg hover:bg-yellow-500 transition-colors font-medium shadow-md">
+                    <button onclick="skipLogin()" class="w-full flex items-center justify-center px-4 py-3 mb-3 bg-yellow-400 text-gray-800 rounded-lg hover:bg-yellow-500 transition-colors font-medium shadow-md mobile-button mobile-optimized">
                         <span data-zh="跳過登入，直接開始" data-en="Skip login, start directly">跳過登入，直接開始</span>
                     </button>
-                    <button onclick="loginWithGoogle()" id="google-login-btn" class="w-full flex items-center justify-center px-4 py-3 mb-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium shadow-md">
+                    <button onclick="loginWithGoogle()" id="google-login-btn" class="w-full flex items-center justify-center px-4 py-3 mb-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium shadow-md mobile-button mobile-optimized">
                         <img src="https://img.icons8.com/color/24/000000/google-logo.png" alt="Google" class="w-5 h-5 mr-2">
                         <span data-zh="使用 Google 登入" data-en="Login with Google">使用 Google 登入</span>
                     </button>
-                    <button onclick="loginWithLINE()" class="w-full flex items-center justify-center px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium shadow-md">
+                    <button onclick="loginWithLINE()" class="w-full flex items-center justify-center px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium shadow-md mobile-button mobile-optimized">
                         <img src="https://img.icons8.com/color/24/000000/line-me.png" alt="LINE" class="w-5 h-5 mr-2">
                         <span data-zh="使用 LINE 登入" data-en="Login with LINE">使用 LINE 登入</span>
                     </button>
@@ -174,19 +225,19 @@
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="學生姓名 *" data-en="Student Name *">學生姓名 *</label>
                                 <input type="text" id="student_name" name="student_name" required 
-                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent mobile-input mobile-optimized"
                                     data-zh-ph="例如：王小明" data-en-ph="e.g., David Wang" placeholder="例如：王小明">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="學生電子郵件 *" data-en="Student Email *">學生電子郵件 *</label>
                                 <input type="email" id="student_email" name="student_email" required 
-                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent mobile-input mobile-optimized"
                                     data-zh-ph="例如：david@example.com" data-en-ph="e.g., david@example.com" placeholder="例如：david@example.com">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="國籍 *" data-en="Citizenship *">國籍 *</label>
                                 <input type="text" id="citizenship" name="citizenship" required 
-                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent mobile-input mobile-optimized"
                                     data-zh-ph="例如：台灣" data-en-ph="e.g., Taiwan" placeholder="例如：台灣">
                             </div>
                         </div>
@@ -194,19 +245,19 @@
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="家長姓名 *" data-en="Parent Name *">家長姓名 *</label>
                                 <input type="text" id="parent_name" name="parent_name"
-                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent mobile-input mobile-optimized"
                                     data-zh-ph="例如：王媽媽" data-en-ph="e.g., Alice Wang" placeholder="例如：王媽媽">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="家長電子郵件 *" data-en="Parent Email *">家長電子郵件 *</label>
                                 <input type="email" id="parent_email" name="parent_email"
-                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent mobile-input mobile-optimized"
                                     data-zh-ph="例如：parent@example.com" data-en-ph="e.g., parent@example.com" placeholder="例如：parent@example.com">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="與學生關係 *" data-en="Relationship to Student *">與學生關係 *</label>
                                 <input type="text" id="relationship" name="relationship"
-                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent mobile-input mobile-optimized"
                                     data-zh-ph="例如：母親 / 父親" data-en-ph="e.g., Mother / Father" placeholder="例如：母親">
                             </div>
                             <div class="border-t pt-4">
@@ -217,7 +268,7 @@
                                     data-zh-ph="例如：王小明" data-en-ph="e.g., David Wang" placeholder="例如：王小明">
                                 <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="學生電子郵件 *" data-en="Student Email *">學生電子郵件 *</label>
                                 <input type="email" id="child_email" name="child_email"
-                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent mobile-input mobile-optimized"
                                     data-zh-ph="例如：david@example.com" data-en-ph="e.g., david@example.com" placeholder="例如：david@example.com">
                             </div>
                         </div>
@@ -234,13 +285,13 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="GPA (滿分4.0) *" data-en="GPA (out of 4.0) *">GPA (滿分4.0) *</label>
                             <input type="number" id="gpa" name="gpa" step="0.1" min="0" max="4" required 
-                                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent mobile-input mobile-optimized"
                                 data-zh-ph="例如：3.8" data-en-ph="e.g., 3.8" placeholder="例如：3.8">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="目標學位 *" data-en="Target Degree *">目標學位 *</label>
                             <select id="degree" name="degree" required 
-                                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent">
+                                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent mobile-input mobile-optimized">
                                 <option value="" data-zh="請選擇" data-en="Please select">請選擇</option>
                                 <option value="bachelor" data-zh="學士" data-en="Bachelor's">學士</option>
                                 <option value="master" data-zh="碩士" data-en="Master's">碩士</option>
@@ -277,7 +328,7 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="預算 (每年學費+生活費，單位：美元) *" data-en="Budget (Annual tuition + living expenses, USD) *">預算 (每年學費+生活費，單位：美元) *</label>
                             <input type="number" id="budget" name="budget" required 
-                                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent mobile-input mobile-optimized"
                                 data-zh-ph="例如：50000" data-en-ph="e.g., 50000" placeholder="例如：50000">
                         </div>
                         <div>
@@ -348,7 +399,7 @@
                 </div>
             </header>
 
-            <main class="flex-1 p-6 overflow-y-auto bg-white" id="chat-container">
+            <main class="flex-1 p-6 overflow-y-auto bg-white chat-container mobile-optimized" id="chat-container">
                 <div class="max-w-4xl mx-auto">
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-4">
                         <div class="flex items-center mb-4">
@@ -595,30 +646,6 @@
             showSetupPage();
         }
 
-        // LINE 登入（開發中）
-        function loginWithLINE() {
-            // 獲取 LINE Login URL
-            fetch('https://aistudentbackend.zeabur.app/api/v1/auth/line/login')
-                .then(function(response) {
-                    return response.json();
-                })
-                .then(function(data) {
-                    if (data.ok) {
-                        // 重定向到 LINE Login
-                        window.location.href = data.login_url;
-                    } else {
-                        alert(currentLanguage === 'en' ? 
-                            'LINE login is not available. Please use Google login or skip login.' : 
-                            'LINE 登入功能暫時無法使用，請使用 Google 登入或跳過登入。');
-                    }
-                })
-                .catch(function(error) {
-                    console.error('LINE Login error:', error);
-                    alert(currentLanguage === 'en' ? 
-                        'LINE login failed. Please try again or use Google login.' : 
-                        'LINE 登入失敗，請重試或使用 Google 登入。');
-                });
-        }
 
         // 初始化年份選項
         function initializeYearOptions() {
@@ -967,3 +994,114 @@
                 })
                 .then(function(response) {
                     return response.json();
+                })
+                .then(function(result) {
+                    if (result.ok) {
+                        addMessage(result.data.response, 'ai');
+                    } else {
+                        console.error('Welcome message failed:', result);
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Welcome message error:', error);
+                });
+            } catch (error) {
+                console.error('Welcome message error:', error);
+            }
+        }
+
+        // 載入快速問答按鈕（依身份）
+        function loadQuickActions() {
+            var qa = document.getElementById('quick-actions');
+            if (!qa) return;
+            qa.innerHTML = '';
+            
+            var studentBtns = [
+                { zh: '學校推薦', en: 'School Recommendations', q: '根據我的背景推薦適合的學校和科系', q_en: 'Recommend suitable schools and majors based on my background' },
+                { zh: '申請規劃', en: 'Application Planning', q: '請幫我規劃完整的申請時間表和流程', q_en: 'Please help me plan a complete application timeline and process' },
+                { zh: '獎學金申請', en: 'Scholarship Application', q: '有哪些適合我的獎學金可以申請？', q_en: 'What scholarships are suitable for me to apply for?' },
+                { zh: '簽證指導', en: 'Visa Guidance', q: '學生簽證申請流程和注意事項', q_en: 'Student visa application process and important notes' },
+                { zh: '住宿建議', en: 'Housing Advice', q: '海外住宿選擇和注意事項', q_en: 'Overseas accommodation options and considerations' },
+                { zh: '語言準備', en: 'Language Preparation', q: '語言考試準備和成績要求', q_en: 'Language test preparation and score requirements' }
+            ];
+            var parentBtns = [
+                { zh: '費用規劃', en: 'Cost Planning', q: '一年總費用預估與預算建議', q_en: 'Annual total cost estimation and budget recommendations' },
+                { zh: '投資回報', en: 'ROI Analysis', q: '幫我估算不同方案的投資回收期', q_en: 'Help me estimate the ROI for different options' },
+                { zh: '安全考量', en: 'Safety Considerations', q: '海外留學安全注意事項', q_en: 'Safety considerations for studying abroad' },
+                { zh: '保險規劃', en: 'Insurance Planning', q: '留學保險選擇和規劃', q_en: 'Study abroad insurance options and planning' },
+                { zh: '就業前景', en: 'Career Prospects', q: '畢業後就業前景和發展', q_en: 'Career prospects and development after graduation' },
+                { zh: '文化適應', en: 'Cultural Adaptation', q: '如何幫助孩子適應海外文化', q_en: 'How to help children adapt to overseas culture' }
+            ];
+            
+            var buttons = currentRole === 'parent' ? parentBtns : studentBtns;
+            
+            for (var i = 0; i < buttons.length; i++) {
+                var btn = buttons[i];
+                var label = currentLanguage === 'en' ? btn.en : btn.zh;
+                var question = currentLanguage === 'en' ? btn.q_en : btn.q;
+                
+                var button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'px-4 py-3 text-sm bg-white hover:bg-gray-50 rounded-lg border border-gray-200 shadow-sm transition-colors text-gray-700 font-medium';
+                button.textContent = label;
+                button.onclick = function(questionText) {
+                    return function() {
+                        document.getElementById('message-input').value = questionText;
+                        sendMessage();
+                    };
+                }(question);
+                qa.appendChild(button);
+            }
+        }
+        
+        // 頁面載入時檢查登入狀態
+        window.onload = function() {
+            // 檢查 URL 參數中的 token
+            var urlParams = new URLSearchParams(window.location.search);
+            var token = urlParams.get('token');
+            var error = urlParams.get('error');
+            
+            // 處理登入錯誤
+            if (error) {
+                var errorMessage = '';
+                switch(error) {
+                    case 'missing_code':
+                        errorMessage = currentLanguage === 'en' ? 'Login failed: Missing authorization code' : '登入失敗：缺少授權碼';
+                        break;
+                    case 'token_exchange_failed':
+                        errorMessage = currentLanguage === 'en' ? 'Login failed: Token exchange failed' : '登入失敗：令牌交換失敗';
+                        break;
+                    case 'user_info_failed':
+                        errorMessage = currentLanguage === 'en' ? 'Login failed: Unable to get user information' : '登入失敗：無法獲取用戶資訊';
+                        break;
+                    case 'callback_failed':
+                        errorMessage = currentLanguage === 'en' ? 'Login failed: Callback processing failed' : '登入失敗：回調處理失敗';
+                        break;
+                    default:
+                        errorMessage = currentLanguage === 'en' ? 'Login failed: ' + error : '登入失敗：' + error;
+                }
+                alert(errorMessage);
+                // 清除 URL 參數
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+            
+            if (token) {
+                // 儲存 token 並跳轉到設定頁面
+                localStorage.setItem('jwt', token);
+                showSetupPage();
+                // 清除 URL 參數
+                window.history.replaceState({}, document.title, window.location.pathname);
+            } else {
+                // 檢查本地儲存的 token
+                var storedToken = localStorage.getItem('jwt');
+                if (storedToken) {
+                    showSetupPage();
+                } else {
+                    showLoginPage();
+                }
+            }
+        };
+    </script>
+</body>
+</html>
+
