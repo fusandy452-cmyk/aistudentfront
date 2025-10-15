@@ -711,10 +711,10 @@
                 
                 // 儲存 token 和用戶信息
                 localStorage.setItem('jwt', event.data.token);
+                localStorage.setItem('userProfile', JSON.stringify(event.data.user));
                 
-                // 顯示用戶信息並跳轉到設定頁面
+                // 顯示用戶信息，不自動跳轉到設定頁面
                 showUserInfo(event.data.user);
-                showSetupPage();
             }
         });
 
@@ -904,18 +904,14 @@
             // 檢查是否有用戶設定
             if (!profileId) {
                 // 如果沒有設定，先進行設定流程
-                document.getElementById('auth-section').classList.add('hidden');
-                document.getElementById('setup-section').classList.remove('hidden');
+                document.getElementById('login-page').classList.add('hidden');
+                document.getElementById('setup-page').classList.remove('hidden');
+                document.getElementById('chat-page').classList.add('hidden');
                 return;
             }
             
             // 如果有設定，直接進入聊天
-            document.getElementById('auth-section').classList.add('hidden');
-            document.getElementById('setup-section').classList.add('hidden');
-            document.getElementById('chat-section').classList.remove('hidden');
-            
-            // 載入聊天界面
-            loadChatInterface();
+            showChatPage();
         }
         
         // 開啟用戶設定頁面
@@ -1464,9 +1460,21 @@
         
         // 頁面載入時檢查登入狀態
         window.onload = function() {
-            // 清除可能無效的舊 token（用於測試）
-            // 取消註解下面這行來強制顯示登入頁面
-            localStorage.removeItem('jwt');
+            // 檢查是否已登入
+            var existingJWT = localStorage.getItem('jwt');
+            var existingUserProfile = localStorage.getItem('userProfile');
+            
+            // 如果已經登入，顯示用戶資訊
+            if (existingJWT && existingUserProfile && existingJWT !== 'fake-jwt-token-for-testing') {
+                try {
+                    var userProfile = JSON.parse(existingUserProfile);
+                    showUserInfo(userProfile);
+                    console.log('User already logged in:', userProfile.name);
+                } catch (e) {
+                    console.error('Error parsing user profile:', e);
+                    localStorage.removeItem('userProfile');
+                }
+            }
             
             // 檢查 URL 參數中的 token
             var urlParams = new URLSearchParams(window.location.search);
@@ -1498,11 +1506,24 @@
             }
             
             if (token) {
-                // 儲存 token 並跳轉到設定頁面
+                // 儲存 token
                 localStorage.setItem('jwt', token);
-                showSetupPage();
+                
+                // 如果有 provider 參數，表示是 LINE 登入，需要獲取用戶資訊
+                var provider = urlParams.get('provider');
+                if (provider === 'line') {
+                    // LINE 登入成功，但需要獲取用戶資訊
+                    // 暫時顯示登入成功訊息，實際應用中可能需要額外的 API 調用
+                    alert(currentLanguage === 'en' ? 
+                        'LINE login successful! Please refresh the page to continue.' : 
+                        'LINE 登入成功！請重新整理頁面以繼續。');
+                }
+                
                 // 清除 URL 參數
                 window.history.replaceState({}, document.title, window.location.pathname);
+                
+                // 重新載入頁面以顯示正確的狀態
+                window.location.reload();
             } else {
                 // 檢查本地儲存的 token
                 var storedToken = localStorage.getItem('jwt');
