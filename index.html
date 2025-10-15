@@ -752,6 +752,32 @@
             document.getElementById('chat-page').classList.add('hidden');
         }
 
+        function validateToken(token) {
+            // 簡單的 token 驗證，檢查是否為有效的 JWT 格式
+            try {
+                var parts = token.split('.');
+                if (parts.length !== 3) {
+                    throw new Error('Invalid token format');
+                }
+                
+                // 檢查 token 是否過期（簡單檢查）
+                var payload = JSON.parse(atob(parts[1]));
+                var currentTime = Math.floor(Date.now() / 1000);
+                
+                if (payload.exp && payload.exp < currentTime) {
+                    throw new Error('Token expired');
+                }
+                
+                // Token 有效，顯示設定頁面
+                showSetupPage();
+            } catch (error) {
+                console.log('Token validation failed:', error);
+                // Token 無效，清除並顯示登入頁面
+                localStorage.removeItem('jwt');
+                showLoginPage();
+            }
+        }
+
         function showSetupPage() {
             document.getElementById('login-page').classList.add('hidden');
             document.getElementById('setup-page').classList.remove('hidden');
@@ -1056,6 +1082,10 @@
         
         // 頁面載入時檢查登入狀態
         window.onload = function() {
+            // 清除可能無效的舊 token（用於測試）
+            // 取消註解下面這行來強制顯示登入頁面
+            localStorage.removeItem('jwt');
+            
             // 檢查 URL 參數中的 token
             var urlParams = new URLSearchParams(window.location.search);
             var token = urlParams.get('token');
@@ -1095,7 +1125,8 @@
                 // 檢查本地儲存的 token
                 var storedToken = localStorage.getItem('jwt');
                 if (storedToken) {
-                    showSetupPage();
+                    // 驗證 token 是否有效
+                    validateToken(storedToken);
                 } else {
                     showLoginPage();
                 }
@@ -1104,4 +1135,5 @@
     </script>
 </body>
 </html>
+
 
