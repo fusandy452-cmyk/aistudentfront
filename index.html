@@ -851,6 +851,17 @@
         function sendWelcomeMessage() {
             if (!profileId) return;
             
+            // 立即顯示歡迎訊息，不等待 API 回應
+            var welcomeText = '';
+            if (currentLanguage === 'en') {
+                welcomeText = '🎓 Hello! I am your AI Study Abroad Advisor.\n\nI have reviewed your basic information, now let\'s dive deep into your study abroad planning!\n\nYou can ask me any questions about studying abroad, such as:\n\n• School and major recommendations\n• Application timeline planning\n• Scholarship opportunities\n• Visa and accommodation guidance\n\nWhat would you like to know first?';
+            } else {
+                welcomeText = '🎓 您好！我是您的AI留學顧問。\n\n我已經了解了您的基本資訊，現在讓我們深入討論您的留學計劃吧！\n\n您可以問我任何關於留學的問題，比如：\n\n• 推薦適合的學校和專業\n• 申請時間規劃\n• 獎學金申請建議\n• 簽證與住宿資訊\n\n您想先了解哪個部分呢？';
+            }
+            
+            addMessage(welcomeText, 'ai');
+            
+            // 同時發送 API 請求獲取更詳細的回覆
             try {
                 var authHeader = {};
                 var jwt = localStorage.getItem('jwt');
