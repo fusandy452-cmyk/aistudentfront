@@ -123,10 +123,11 @@
                         <img src="https://img.icons8.com/color/24/000000/google-logo.png" alt="Google" class="w-5 h-5 mr-2">
                         <span data-zh="使用 Google 登入" data-en="Login with Google">使用 Google 登入</span>
                     </button>
-                    <button onclick="loginWithLine()" class="w-full flex items-center justify-center px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium shadow-md">
+                    <button onclick="loginWithLINE()" class="w-full flex items-center justify-center px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium shadow-md">
                         <img src="https://img.icons8.com/color/24/000000/line-me.png" alt="LINE" class="w-5 h-5 mr-2">
                         <span data-zh="使用 LINE 登入" data-en="Login with LINE">使用 LINE 登入</span>
                     </button>
+                    <div class="text-xs text-gray-500 mt-2 text-center" data-zh="LINE 登入功能開發中，請先使用 Google 登入或跳過登入" data-en="LINE login is under development, please use Google login or skip login">LINE 登入功能開發中，請先使用 Google 登入或跳過登入</div>
                 </div>
             </div>
 
@@ -541,6 +542,13 @@
             showSetupPage();
         }
 
+        // LINE 登入（開發中）
+        function loginWithLINE() {
+            alert(currentLanguage === 'en' ? 
+                'LINE login is currently under development. Please use Google login or skip login to continue.' : 
+                'LINE 登入功能目前開發中，請使用 Google 登入或跳過登入繼續使用。');
+        }
+
         // 初始化年份選項
         function initializeYearOptions() {
             var yearSelect = document.getElementById('intake_year');
@@ -911,20 +919,20 @@
             qa.innerHTML = '';
             
             var studentBtns = [
-                { zh: '學校推薦', en: 'School Recommendations', q: '根據我的背景推薦適合的學校和科系' },
-                { zh: '申請規劃', en: 'Application Planning', q: '請幫我規劃完整的申請時間表和流程' },
-                { zh: '獎學金申請', en: 'Scholarship Application', q: '有哪些適合我的獎學金可以申請？' },
-                { zh: '簽證指導', en: 'Visa Guidance', q: '學生簽證申請流程和注意事項' },
-                { zh: '住宿建議', en: 'Housing Advice', q: '海外住宿選擇和注意事項' },
-                { zh: '語言準備', en: 'Language Preparation', q: '語言考試準備和成績要求' }
+                { zh: '學校推薦', en: 'School Recommendations', q: '根據我的背景推薦適合的學校和科系', q_en: 'Recommend suitable schools and majors based on my background' },
+                { zh: '申請規劃', en: 'Application Planning', q: '請幫我規劃完整的申請時間表和流程', q_en: 'Please help me plan a complete application timeline and process' },
+                { zh: '獎學金申請', en: 'Scholarship Application', q: '有哪些適合我的獎學金可以申請？', q_en: 'What scholarships are suitable for me to apply for?' },
+                { zh: '簽證指導', en: 'Visa Guidance', q: '學生簽證申請流程和注意事項', q_en: 'Student visa application process and important notes' },
+                { zh: '住宿建議', en: 'Housing Advice', q: '海外住宿選擇和注意事項', q_en: 'Overseas accommodation options and considerations' },
+                { zh: '語言準備', en: 'Language Preparation', q: '語言考試準備和成績要求', q_en: 'Language test preparation and score requirements' }
             ];
             var parentBtns = [
-                { zh: '費用規劃', en: 'Cost Planning', q: '一年總費用預估與預算建議' },
-                { zh: '投資回報', en: 'ROI Analysis', q: '幫我估算不同方案的投資回收期' },
-                { zh: '安全考量', en: 'Safety Considerations', q: '海外留學安全注意事項' },
-                { zh: '保險規劃', en: 'Insurance Planning', q: '留學保險選擇和規劃' },
-                { zh: '就業前景', en: 'Career Prospects', q: '畢業後就業前景和發展' },
-                { zh: '文化適應', en: 'Cultural Adaptation', q: '如何幫助孩子適應海外文化' }
+                { zh: '費用規劃', en: 'Cost Planning', q: '一年總費用預估與預算建議', q_en: 'Annual total cost estimation and budget recommendations' },
+                { zh: '投資回報', en: 'ROI Analysis', q: '幫我估算不同方案的投資回收期', q_en: 'Help me estimate the ROI for different options' },
+                { zh: '安全考量', en: 'Safety Considerations', q: '海外留學安全注意事項', q_en: 'Safety considerations for studying abroad' },
+                { zh: '保險規劃', en: 'Insurance Planning', q: '留學保險選擇和規劃', q_en: 'Study abroad insurance options and planning' },
+                { zh: '就業前景', en: 'Career Prospects', q: '畢業後就業前景和發展', q_en: 'Career prospects and development after graduation' },
+                { zh: '文化適應', en: 'Cultural Adaptation', q: '如何幫助孩子適應海外文化', q_en: 'How to help children adapt to overseas culture' }
             ];
             
             var buttons = currentRole === 'parent' ? parentBtns : studentBtns;
@@ -932,20 +940,22 @@
             for (var i = 0; i < buttons.length; i++) {
                 var btn = buttons[i];
                 var label = currentLanguage === 'en' ? btn.en : btn.zh;
+                var question = currentLanguage === 'en' ? btn.q_en : btn.q;
                 
                 var button = document.createElement('button');
                 button.type = 'button';
                 button.className = 'px-4 py-3 text-sm bg-white hover:bg-gray-50 rounded-lg border border-gray-200 shadow-sm transition-colors text-gray-700 font-medium';
                 button.textContent = label;
-                button.onclick = function(question) {
+                button.onclick = function(questionText) {
                     return function() {
-                        document.getElementById('message-input').value = question;
+                        document.getElementById('message-input').value = questionText;
                         sendMessage();
                     };
-                }(btn.q);
+                }(question);
                 qa.appendChild(button);
             }
         }
     </script>
 </body>
 </html>
+
