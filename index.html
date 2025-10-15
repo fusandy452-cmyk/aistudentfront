@@ -122,7 +122,7 @@
                 const clientId = window.__GOOGLE_CLIENT_ID__ || '300123710303-m4j1laa65p664n5vtrdkfvfa7b42c2o6.apps.googleusercontent.com';
                 addDebugInfo('使用 Client ID: ' + clientId);
                 
-                const googleAuthUrl = 'https://accounts.google.com/oauth/authorize?' +
+                const googleAuthUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' +
                     'client_id=' + clientId + '&' +
                     'redirect_uri=https://aistudentbackend.zeabur.app/auth/google/callback&' +
                     'response_type=code&' +
@@ -729,7 +729,7 @@
             }
             
             // 使用彈出視窗進行 Google 登入
-            var googleAuthUrl = 'https://accounts.google.com/oauth/authorize?' +
+            var googleAuthUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' +
                 'client_id=' + (window.__GOOGLE_CLIENT_ID__ || '300123710303-m4j1laa65p664n5vtrdkfvfa7b42c2o6.apps.googleusercontent.com') + '&' +
                 'redirect_uri=https://aistudentbackend.zeabur.app/auth/google/callback&' +
                 'response_type=code&' +
