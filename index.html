@@ -7,6 +7,147 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script>
+        // 調試模式開關 (按 Ctrl+Shift+D 開啟)
+        window.DEBUG_MODE = false;
+        
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+                window.DEBUG_MODE = !window.DEBUG_MODE;
+                toggleDebugPanel();
+            }
+        });
+        
+        function toggleDebugPanel() {
+            let panel = document.getElementById('debug-panel');
+            if (!panel) {
+                createDebugPanel();
+            } else {
+                panel.style.display = window.DEBUG_MODE ? 'block' : 'none';
+            }
+        }
+        
+        function createDebugPanel() {
+            const panel = document.createElement('div');
+            panel.id = 'debug-panel';
+            panel.style.cssText = `
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                width: 400px;
+                max-height: 500px;
+                background: #f0f0f0;
+                border: 2px solid #333;
+                border-radius: 8px;
+                padding: 15px;
+                font-family: monospace;
+                font-size: 12px;
+                z-index: 10000;
+                overflow-y: auto;
+                display: ${window.DEBUG_MODE ? 'block' : 'none'};
+            `;
+            
+            panel.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h3 style="margin: 0; color: #333;">🔧 調試面板</h3>
+                    <button onclick="clearDebugInfo()" style="padding: 2px 6px; font-size: 10px;">清除</button>
+                </div>
+                <div id="debug-info" style="background: white; padding: 10px; border-radius: 4px; min-height: 200px; max-height: 300px; overflow-y: auto;"></div>
+                <div style="margin-top: 10px;">
+                    <button onclick="testGoogleAPI()" style="padding: 4px 8px; margin: 2px; font-size: 10px;">測試 Google API</button>
+                    <button onclick="testBackendConfig()" style="padding: 4px 8px; margin: 2px; font-size: 10px;">測試後端</button>
+                    <button onclick="testGoogleLogin()" style="padding: 4px 8px; margin: 2px; font-size: 10px;">測試登入</button>
+                </div>
+                <div style="margin-top: 5px; font-size: 10px; color: #666;">
+                    按 Ctrl+Shift+D 切換調試面板
+                </div>
+            `;
+            
+            document.body.appendChild(panel);
+            
+            // 添加調試函數
+            window.addDebugInfo = function(message) {
+                const debugInfo = document.getElementById('debug-info');
+                if (!debugInfo) return;
+                
+                const div = document.createElement('div');
+                div.textContent = new Date().toLocaleTimeString() + ': ' + message;
+                debugInfo.appendChild(div);
+                debugInfo.scrollTop = debugInfo.scrollHeight;
+                console.log('[DEBUG]', message);
+            };
+            
+            window.clearDebugInfo = function() {
+                const debugInfo = document.getElementById('debug-info');
+                if (debugInfo) debugInfo.innerHTML = '';
+            };
+            
+            window.testGoogleAPI = function() {
+                addDebugInfo('測試 Google API 載入狀態...');
+                
+                if (typeof google !== 'undefined') {
+                    addDebugInfo('✓ Google API 已載入');
+                    if (google.accounts) {
+                        addDebugInfo('✓ Google Accounts API 可用');
+                    } else {
+                        addDebugInfo('✗ Google Accounts API 不可用');
+                    }
+                } else {
+                    addDebugInfo('✗ Google API 未載入');
+                }
+            };
+            
+            window.testBackendConfig = function() {
+                addDebugInfo('測試後端配置...');
+                
+                fetch(window.__CONFIG__.API_BASE + '/auth/config')
+                    .then(r => r.json())
+                    .then(cfg => {
+                        addDebugInfo('後端配置響應: ' + JSON.stringify(cfg));
+                        
+                        if (cfg && cfg.ok && cfg.google && cfg.google.client_id) {
+                            addDebugInfo('✓ Google Client ID 配置正確: ' + cfg.google.client_id);
+                            window.__GOOGLE_CLIENT_ID__ = cfg.google.client_id;
+                        } else {
+                            addDebugInfo('✗ Google Client ID 配置有問題');
+                        }
+                    })
+                    .catch(error => {
+                        addDebugInfo('✗ 後端配置請求失敗: ' + error.message);
+                    });
+            };
+            
+            window.testGoogleLogin = function() {
+                addDebugInfo('測試 Google 登入（彈出視窗模式）...');
+                
+                const clientId = window.__GOOGLE_CLIENT_ID__ || '300123710303-m4j1laa65p664n5vtrdkfvfa7b42c2o6.apps.googleusercontent.com';
+                addDebugInfo('使用 Client ID: ' + clientId);
+                
+                const googleAuthUrl = 'https://accounts.google.com/oauth/authorize?' +
+                    'client_id=' + clientId + '&' +
+                    'redirect_uri=https://aistudentbackend.zeabur.app/auth/google/callback&' +
+                    'response_type=code&' +
+                    'scope=openid email profile&' +
+                    'state=popup_login';
+                
+                addDebugInfo('Google 登入 URL: ' + googleAuthUrl);
+                
+                // 打開彈出視窗
+                const popup = window.open(
+                    googleAuthUrl,
+                    'googleLogin',
+                    'width=500,height=600,scrollbars=yes,resizable=yes'
+                );
+                
+                if (!popup) {
+                    addDebugInfo('✗ 彈出視窗被阻擋');
+                    return;
+                }
+                
+                addDebugInfo('✓ 彈出視窗已打開');
+            };
+        }
+    </script>
+    <script>
         // 內嵌配置
         window.__CONFIG__ = {
             API_BASE: 'https://aistudentbackend.zeabur.app/api/v1',
@@ -476,6 +617,11 @@
             if (event.data && event.data.type === 'GOOGLE_LOGIN_SUCCESS') {
                 console.log('Received login success message:', event.data);
                 
+                if (window.addDebugInfo) {
+                    addDebugInfo('✓ 收到 Google 登入成功消息');
+                    addDebugInfo('用戶: ' + event.data.user.name + ' (' + event.data.user.email + ')');
+                }
+                
                 // 儲存 token 和用戶信息
                 localStorage.setItem('jwt', event.data.token);
                 
@@ -578,6 +724,9 @@
         // 登入功能
         function loginWithGoogle() {
             console.log('Google login button clicked');
+            if (window.addDebugInfo) {
+                addDebugInfo('Google 登入按鈕被點擊');
+            }
             
             // 使用彈出視窗進行 Google 登入
             var googleAuthUrl = 'https://accounts.google.com/oauth/authorize?' +
@@ -588,6 +737,10 @@
                 'state=popup_login';
             
             console.log('Opening Google login popup:', googleAuthUrl);
+            if (window.addDebugInfo) {
+                addDebugInfo('準備打開 Google 登入彈出視窗');
+                addDebugInfo('URL: ' + googleAuthUrl);
+            }
             
             // 打開彈出視窗
             var popup = window.open(
@@ -597,10 +750,18 @@
             );
             
             if (!popup) {
-                alert(currentLanguage === 'en' ? 
+                const errorMsg = currentLanguage === 'en' ? 
                     'Popup blocked. Please allow popups for this site and try again.' : 
-                    '彈出視窗被阻擋。請允許此網站的彈出視窗後再試。');
+                    '彈出視窗被阻擋。請允許此網站的彈出視窗後再試。';
+                alert(errorMsg);
+                if (window.addDebugInfo) {
+                    addDebugInfo('✗ ' + errorMsg);
+                }
                 return;
+            }
+            
+            if (window.addDebugInfo) {
+                addDebugInfo('✓ 彈出視窗已成功打開');
             }
             
             // 監聽彈出視窗的關閉
@@ -1158,6 +1319,4 @@
     </script>
 </body>
 </html>
-
-
 
