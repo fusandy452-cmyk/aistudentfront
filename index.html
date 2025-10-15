@@ -337,6 +337,9 @@
                 <button id="back-to-setup" class="absolute left-4 top-4 text-gray-800 hover:text-gray-600 transition-colors">
                     <span data-zh="← 重新設定" data-en="← Reset Settings">← 重新設定</span>
                 </button>
+                <button onclick="logout()" class="absolute right-4 top-4 text-gray-800 hover:text-gray-600 transition-colors">
+                    <span data-zh="登出" data-en="Logout">登出</span>
+                </button>
                 <h1 class="text-xl font-bold" data-zh="AI 留學顧問" data-en="AI Study Abroad Advisor">AI 留學顧問</h1>
                 <p class="text-sm" data-zh="正在為您提供專業建議" data-en="Providing you with professional advice">正在為您提供專業建議</p>
                 <div class="flex items-center justify-center mt-2">
@@ -491,6 +494,23 @@
 
         // 登入功能
         function loginWithGoogle() {
+            // 檢查是否在手機環境
+            var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            if (isMobile) {
+                // 手機環境：直接跳轉到 Google OAuth
+                var googleAuthUrl = 'https://accounts.google.com/oauth/authorize?' +
+                    'client_id=300123710303-m4j1laa65p664n5vtrdkfvfa7b42c2o6.apps.googleusercontent.com&' +
+                    'redirect_uri=https://aistudentbackend.zeabur.app/auth/google/callback&' +
+                    'response_type=code&' +
+                    'scope=openid email profile&' +
+                    'state=mobile_login';
+                
+                window.location.href = googleAuthUrl;
+                return;
+            }
+            
+            // 桌面環境：使用 Google API
             if (!window.__GOOGLE_CLIENT_ID__) {
                 alert(currentLanguage === 'en' ? 
                     'Google OAuth is not configured. Please use "Skip login" for now.' : 
@@ -499,15 +519,7 @@
             }
             
             console.log('Attempting Google login with Client ID:', window.__GOOGLE_CLIENT_ID__);
-            var client = google.accounts.oauth2.initTokenClient({
-                client_id: window.__GOOGLE_CLIENT_ID__,
-                scope: 'openid email profile',
-                callback: async (response) => {
-                    try {
-                        var idToken = response.access_token ? undefined : undefined; // token client 不給 id_token
-                    } catch (e) {}
-                }
-            });
+            
             // 改用 one-tap 的 ID token API
             google.accounts.id.initialize({
                 client_id: window.__GOOGLE_CLIENT_ID__,
@@ -535,13 +547,45 @@
             google.accounts.id.prompt();
         }
 
-        function loginWithLine() {
-            alert(currentLanguage === 'en' ? 'Login is temporarily unavailable. Please click "Skip login, start directly".' : '登入功能暫時不可用，請點「跳過登入，直接開始」');
+        function loginWithLINE() {
+            // 獲取 LINE Login URL
+            fetch('https://aistudentbackend.zeabur.app/api/v1/auth/line/login')
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data.ok) {
+                        // 重定向到 LINE Login
+                        window.location.href = data.login_url;
+                    } else {
+                        alert(currentLanguage === 'en' ? 
+                            'LINE login is not available. Please use Google login or skip login.' : 
+                            'LINE 登入功能暫時無法使用，請使用 Google 登入或跳過登入。');
+                    }
+                })
+                .catch(function(error) {
+                    console.error('LINE Login error:', error);
+                    alert(currentLanguage === 'en' ? 
+                        'LINE login failed. Please try again or use Google login.' : 
+                        'LINE 登入失敗，請重試或使用 Google 登入。');
+                });
+        }
+        
+        // 登出功能
+        function logout() {
+            // 清除本地儲存
+            localStorage.removeItem('jwt');
+            localStorage.removeItem('userProfile');
+            
+            // 顯示登出成功訊息
+            alert(currentLanguage === 'en' ? 
+                'You have been logged out successfully.' : 
+                '您已成功登出。');
+            
+            // 重新載入頁面
+            window.location.href = 'https://aistudent.zeabur.app';
         }
 
-        function logout() {
-            window.location.href = window.__CONFIG__.API_BASE.replace('/api/v1', '') + '/auth/logout';
-        }
 
         // 跳過登入
         function skipLogin() {
@@ -553,9 +597,27 @@
 
         // LINE 登入（開發中）
         function loginWithLINE() {
-            alert(currentLanguage === 'en' ? 
-                'LINE login is currently under development. Please use Google login or skip login to continue.' : 
-                'LINE 登入功能目前開發中，請使用 Google 登入或跳過登入繼續使用。');
+            // 獲取 LINE Login URL
+            fetch('https://aistudentbackend.zeabur.app/api/v1/auth/line/login')
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data.ok) {
+                        // 重定向到 LINE Login
+                        window.location.href = data.login_url;
+                    } else {
+                        alert(currentLanguage === 'en' ? 
+                            'LINE login is not available. Please use Google login or skip login.' : 
+                            'LINE 登入功能暫時無法使用，請使用 Google 登入或跳過登入。');
+                    }
+                })
+                .catch(function(error) {
+                    console.error('LINE Login error:', error);
+                    alert(currentLanguage === 'en' ? 
+                        'LINE login failed. Please try again or use Google login.' : 
+                        'LINE 登入失敗，請重試或使用 Google 登入。');
+                });
         }
 
         // 初始化年份選項
@@ -905,65 +967,3 @@
                 })
                 .then(function(response) {
                     return response.json();
-                })
-                .then(function(result) {
-                    if (result.ok) {
-                        addMessage(result.data.response, 'ai');
-                    } else {
-                        console.error('Welcome message failed:', result);
-                    }
-                })
-                .catch(function(error) {
-                    console.error('Welcome message error:', error);
-                });
-            } catch (error) {
-                console.error('Welcome message error:', error);
-            }
-        }
-
-        // 載入快速問答按鈕（依身份）
-        function loadQuickActions() {
-            var qa = document.getElementById('quick-actions');
-            if (!qa) return;
-            qa.innerHTML = '';
-            
-            var studentBtns = [
-                { zh: '學校推薦', en: 'School Recommendations', q: '根據我的背景推薦適合的學校和科系', q_en: 'Recommend suitable schools and majors based on my background' },
-                { zh: '申請規劃', en: 'Application Planning', q: '請幫我規劃完整的申請時間表和流程', q_en: 'Please help me plan a complete application timeline and process' },
-                { zh: '獎學金申請', en: 'Scholarship Application', q: '有哪些適合我的獎學金可以申請？', q_en: 'What scholarships are suitable for me to apply for?' },
-                { zh: '簽證指導', en: 'Visa Guidance', q: '學生簽證申請流程和注意事項', q_en: 'Student visa application process and important notes' },
-                { zh: '住宿建議', en: 'Housing Advice', q: '海外住宿選擇和注意事項', q_en: 'Overseas accommodation options and considerations' },
-                { zh: '語言準備', en: 'Language Preparation', q: '語言考試準備和成績要求', q_en: 'Language test preparation and score requirements' }
-            ];
-            var parentBtns = [
-                { zh: '費用規劃', en: 'Cost Planning', q: '一年總費用預估與預算建議', q_en: 'Annual total cost estimation and budget recommendations' },
-                { zh: '投資回報', en: 'ROI Analysis', q: '幫我估算不同方案的投資回收期', q_en: 'Help me estimate the ROI for different options' },
-                { zh: '安全考量', en: 'Safety Considerations', q: '海外留學安全注意事項', q_en: 'Safety considerations for studying abroad' },
-                { zh: '保險規劃', en: 'Insurance Planning', q: '留學保險選擇和規劃', q_en: 'Study abroad insurance options and planning' },
-                { zh: '就業前景', en: 'Career Prospects', q: '畢業後就業前景和發展', q_en: 'Career prospects and development after graduation' },
-                { zh: '文化適應', en: 'Cultural Adaptation', q: '如何幫助孩子適應海外文化', q_en: 'How to help children adapt to overseas culture' }
-            ];
-            
-            var buttons = currentRole === 'parent' ? parentBtns : studentBtns;
-            
-            for (var i = 0; i < buttons.length; i++) {
-                var btn = buttons[i];
-                var label = currentLanguage === 'en' ? btn.en : btn.zh;
-                var question = currentLanguage === 'en' ? btn.q_en : btn.q;
-                
-                var button = document.createElement('button');
-                button.type = 'button';
-                button.className = 'px-4 py-3 text-sm bg-white hover:bg-gray-50 rounded-lg border border-gray-200 shadow-sm transition-colors text-gray-700 font-medium';
-                button.textContent = label;
-                button.onclick = function(questionText) {
-                    return function() {
-                        document.getElementById('message-input').value = questionText;
-                        sendMessage();
-                    };
-                }(question);
-                qa.appendChild(button);
-            }
-        }
-    </script>
-</body>
-</html>
