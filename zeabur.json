@@ -4,5 +4,7 @@
   "rootDirectory": ".",
   "domains": [
     "aistudent.zeabur.app"
-  ]
+  ],
+  "buildCommand": "echo 'Static site - no build required'",
+  "outputDirectory": "."
 }
