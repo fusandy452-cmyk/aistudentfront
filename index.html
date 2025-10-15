@@ -891,6 +891,22 @@
                 addDebugInfo('Google 登入按鈕被點擊');
             }
             
+            // 檢查是否在應用程式內建瀏覽器中
+            var isInAppBrowser = /FBAN|FBAV|Instagram|Line|WhatsApp|Twitter|LinkedInApp|Skype|Pinterest|Snapchat|WeChat|Telegram|Viber|Messenger/i.test(navigator.userAgent);
+            
+            if (isInAppBrowser) {
+                // 在應用程式內建瀏覽器中，提示用戶在外部瀏覽器中開啟
+                var message = currentLanguage === 'en' ? 
+                    'Please open this page in your web browser (Chrome, Safari, etc.) instead of the in-app browser to complete Google login.' : 
+                    '請在外部瀏覽器（Chrome、Safari 等）中開啟此頁面，而不是在應用程式內建瀏覽器中，以完成 Google 登入。';
+                
+                alert(message);
+                if (window.addDebugInfo) {
+                    addDebugInfo('✗ 檢測到應用程式內建瀏覽器，建議使用外部瀏覽器');
+                }
+                return;
+            }
+            
             // 使用彈出視窗進行 Google 登入
             var googleAuthUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' +
                 'client_id=' + (window.__GOOGLE_CLIENT_ID__ || '300123710303-m4j1laa65p664n5vtrdkfvfa7b42c2o6.apps.googleusercontent.com') + '&' +
