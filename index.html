@@ -676,13 +676,18 @@
                 </div>
                 
                 <!-- 操作按鈕 -->
-                <div class="flex space-x-3 mt-8">
-                    <button onclick="saveUserSettings()" class="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-                        <span data-zh="儲存設定" data-en="Save Settings">儲存設定</span>
+                <div class="space-y-3 mt-8">
+                    <button onclick="editUserProfile()" class="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                        <span data-zh="編輯設定資料" data-en="Edit Profile Data">編輯設定資料</span>
                     </button>
-                    <button onclick="closeUserSettings()" class="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
-                        <span data-zh="取消" data-en="Cancel">取消</span>
-                    </button>
+                    <div class="flex space-x-3">
+                        <button onclick="saveUserSettings()" class="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                            <span data-zh="儲存設定" data-en="Save Settings">儲存設定</span>
+                        </button>
+                        <button onclick="closeUserSettings()" class="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                            <span data-zh="取消" data-en="Cancel">取消</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -693,6 +698,66 @@
         var currentRole = 'student';
         var currentLanguage = 'zh';
         var profileId = null;
+        
+        // 從本地儲存載入 profileId
+        function loadProfileId() {
+            var jwt = localStorage.getItem('jwt');
+            var userProfile = localStorage.getItem('userProfile');
+            
+            if (jwt && userProfile && jwt !== 'fake-jwt-token-for-testing') {
+                try {
+                    var user = JSON.parse(userProfile);
+                    var savedProfileId = localStorage.getItem('profileId_' + user.userId);
+                    if (savedProfileId) {
+                        profileId = savedProfileId;
+                        console.log('Loaded profileId for user:', user.name, 'Profile ID:', profileId);
+                    }
+                } catch (e) {
+                    console.error('Error loading profileId:', e);
+                }
+            }
+        }
+        
+        // 儲存 profileId 到本地儲存
+        function saveProfileId(userId, profileIdValue) {
+            if (userId && profileIdValue) {
+                localStorage.setItem('profileId_' + userId, profileIdValue);
+                profileId = profileIdValue;
+                console.log('Saved profileId for user:', userId, 'Profile ID:', profileIdValue);
+            }
+        }
+        
+        // 檢索用戶設定資料
+        function fetchUserProfileData(profileId) {
+            return new Promise((resolve, reject) => {
+                var jwt = localStorage.getItem('jwt');
+                if (!jwt || !profileId) {
+                    reject('No JWT token or profile ID');
+                    return;
+                }
+                
+                fetch(window.__CONFIG__.API_BASE + '/api/v1/user/profile/' + profileId, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + jwt,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.ok) {
+                        console.log('User profile data retrieved:', result.data);
+                        resolve(result.data);
+                    } else {
+                        reject('Failed to retrieve profile: ' + result.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching user profile:', error);
+                    reject(error);
+                });
+            });
+        }
 
         // 監聽彈出視窗消息
         window.addEventListener('message', function(event) {
@@ -712,6 +777,9 @@
                 // 儲存 token 和用戶信息
                 localStorage.setItem('jwt', event.data.token);
                 localStorage.setItem('userProfile', JSON.stringify(event.data.user));
+                
+                // 載入已保存的 profileId
+                loadProfileId();
                 
                 // 顯示用戶信息，不自動跳轉到設定頁面
                 showUserInfo(event.data.user);
@@ -799,6 +867,14 @@
             document.getElementById('user-name').textContent = user.name;
             if (user.avatar) {
                 document.getElementById('user-avatar').src = user.avatar;
+            }
+            
+            // 如果有已保存的設定，顯示提示
+            if (profileId) {
+                var continueButton = document.querySelector('button[onclick="continueToChat()"]');
+                if (continueButton) {
+                    continueButton.innerHTML = '<span data-zh="繼續到聊天對話框 (已有設定)" data-en="Continue to Chat (Profile Ready)">繼續到聊天對話框 (已有設定)</span>';
+                }
             }
         }
 
@@ -912,6 +988,104 @@
             
             // 如果有設定，直接進入聊天
             showChatPage();
+        }
+        
+        // 編輯用戶設定
+        function editUserProfile() {
+            if (!profileId) {
+                alert(currentLanguage === 'en' ? 
+                    'No profile found. Please complete the setup first.' : 
+                    '找不到設定資料。請先完成設定。');
+                return;
+            }
+            
+            // 獲取用戶資料並預填表單
+            fetchUserProfileData(profileId)
+                .then(profileData => {
+                    // 預填表單資料
+                    prefillSetupForm(profileData);
+                    
+                    // 切換到設定頁面
+                    document.getElementById('login-page').classList.add('hidden');
+                    document.getElementById('setup-page').classList.remove('hidden');
+                    document.getElementById('chat-page').classList.add('hidden');
+                })
+                .catch(error => {
+                    console.error('Error loading profile data:', error);
+                    alert(currentLanguage === 'en' ? 
+                        'Failed to load profile data.' : 
+                        '載入設定資料失敗。');
+                });
+        }
+        
+        // 預填設定表單
+        function prefillSetupForm(profileData) {
+            // 設定角色
+            if (profileData.user_role) {
+                selectRole(profileData.user_role);
+            }
+            
+            // 預填學生資料
+            if (profileData.student_name) {
+                document.getElementById('student_name').value = profileData.student_name;
+            }
+            if (profileData.student_email) {
+                document.getElementById('student_email').value = profileData.student_email;
+            }
+            if (profileData.citizenship) {
+                document.getElementById('citizenship').value = profileData.citizenship;
+            }
+            
+            // 預填家長資料
+            if (profileData.parent_name) {
+                document.getElementById('parent_name').value = profileData.parent_name;
+            }
+            if (profileData.parent_email) {
+                document.getElementById('parent_email').value = profileData.parent_email;
+            }
+            if (profileData.relationship) {
+                document.getElementById('relationship').value = profileData.relationship;
+            }
+            if (profileData.child_name) {
+                document.getElementById('child_name').value = profileData.child_name;
+            }
+            if (profileData.child_email) {
+                document.getElementById('child_email').value = profileData.child_email;
+            }
+            
+            // 預填學術背景
+            if (profileData.gpa) {
+                document.getElementById('gpa').value = profileData.gpa;
+            }
+            if (profileData.degree) {
+                document.getElementById('degree').value = profileData.degree;
+            }
+            
+            // 預填國家選擇
+            if (profileData.countries) {
+                var countries = typeof profileData.countries === 'string' ? 
+                    JSON.parse(profileData.countries) : profileData.countries;
+                countries.forEach(country => {
+                    var checkbox = document.querySelector(`input[value="${country}"]`);
+                    if (checkbox) {
+                        checkbox.checked = true;
+                    }
+                });
+            }
+            
+            // 預填預算和時間
+            if (profileData.budget) {
+                document.getElementById('budget').value = profileData.budget;
+            }
+            if (profileData.target_intake) {
+                var intakeParts = profileData.target_intake.split(' ');
+                if (intakeParts.length >= 2) {
+                    document.getElementById('intake_semester').value = intakeParts[0];
+                    document.getElementById('intake_year').value = intakeParts[1];
+                }
+            }
+            
+            console.log('Form prefilled with profile data:', profileData);
         }
         
         // 開啟用戶設定頁面
@@ -1237,6 +1411,13 @@
                 .then(function(result) {
                     if (result.ok) {
                         profileId = result.data.profile_id;
+                        
+                        // 儲存 profileId 到本地儲存
+                        var userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+                        if (userProfile.userId) {
+                            saveProfileId(userProfile.userId, profileId);
+                        }
+                        
                         showChatPage();
                     } else {
                         alert('提交失敗：' + result.error);
@@ -1468,6 +1649,10 @@
             if (existingJWT && existingUserProfile && existingJWT !== 'fake-jwt-token-for-testing') {
                 try {
                     var userProfile = JSON.parse(existingUserProfile);
+                    
+                    // 載入已保存的 profileId
+                    loadProfileId();
+                    
                     showUserInfo(userProfile);
                     console.log('User already logged in:', userProfile.name);
                 } catch (e) {
