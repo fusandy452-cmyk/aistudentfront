@@ -1578,8 +1578,8 @@
                     return response.json();
                 })
                 .then(function(result) {
-                    if (result.ok) {
-                        addMessage(result.data.response, 'ai');
+                    if (result.ok && result.reply) {
+                        addMessage(result.reply, 'ai');
                     } else {
                         console.error('Welcome message failed:', result);
                     }
