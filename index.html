@@ -322,7 +322,7 @@
                         <img src="https://img.icons8.com/color/24/000000/line-me.png" alt="LINE" class="w-5 h-5 mr-2">
                         <span data-zh="使用 LINE 登入" data-en="Login with LINE">使用 LINE 登入</span>
                     </button>
-                    <div class="text-xs text-gray-500 mt-2 text-center" data-zh="LINE 登入功能開發中，請先使用 Google 登入或跳過登入" data-en="LINE login is under development, please use Google login or skip login">LINE 登入功能開發中，請先使用 Google 登入或跳過登入</div>
+                    <div class="text-xs text-gray-500 mt-2 text-center" data-zh="支援 Google 和 LINE 登入" data-en="Support Google and LINE login">支援 Google 和 LINE 登入</div>
                 </div>
             </div>
 
@@ -782,6 +782,12 @@
             }, 300000);
         }
 
+        function showLineUnavailable() {
+            alert(currentLanguage === 'en' ? 
+                'LINE login feature is coming soon! Please use Google login or skip login for now.' : 
+                'LINE 登入功能即將推出！目前請使用 Google 登入或跳過登入。');
+        }
+        
         function loginWithLINE() {
             // 獲取 LINE Login URL
             fetch('https://aistudentbackend.zeabur.app/api/v1/auth/line/login')
