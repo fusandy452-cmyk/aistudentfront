@@ -1,7 +1,33 @@
+# Node.js 相關
 node_modules/
-.env
-*.log
+package.json
+package-static.json
+npm-debug.log*
+
+# Git 相關
 .git/
+.gitignore
+
+# 系統檔案
 .DS_Store
-README.md
+Thumbs.db
+
+# 日誌檔案
+*.log
+logs/
+
+# Python 相關（確保不會被誤判）
+*.py
+*.pyc
+requirements.txt
+app.py
+database.py
+runtime.txt
+
+# 部署相關
 deploy.sh
+.env
+
+# 其他
+README.md
+*.md
