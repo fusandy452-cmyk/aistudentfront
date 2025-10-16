@@ -155,6 +155,9 @@
             TEST_MODE: true
         };
         
+        // LINE Login 配置（需要您設置後填入）
+        window.__LINE_CHANNEL_ID__ = 'YOUR_LINE_CHANNEL_ID'; // 請替換為您的 LINE Channel ID
+        
         // Google OAuth 配置
         window.__GOOGLE_CLIENT_ID__ = '300123710303-m4j1laa65p664n5vtrdkfvfa7b42c2o6.apps.googleusercontent.com';
     </script>
@@ -1179,16 +1182,28 @@
                 addDebugInfo('Google 登入按鈕被點擊');
             }
             
-            // 檢查是否在應用程式內建瀏覽器中
-            var isInAppBrowser = /FBAN|FBAV|Instagram|Line|WhatsApp|Twitter|LinkedInApp|Skype|Pinterest|Snapchat|WeChat|Telegram|Viber|Messenger/i.test(navigator.userAgent);
+            // 檢查是否在應用程式內建瀏覽器中（支援更多瀏覽器）
+            var userAgent = navigator.userAgent || '';
+            var isInAppBrowser = /FBAN|FBAV|Instagram|Line|WhatsApp|Twitter|LinkedInApp|Skype|Pinterest|Snapchat|WeChat|Telegram|Viber|Messenger|MicroMessenger|QQ|UCBrowser|Opera Mini|Opera Mobi/i.test(userAgent);
+            var isLineBrowser = /Line/i.test(userAgent);
             
-            if (isInAppBrowser) {
-                // 在應用程式內建瀏覽器中，提示用戶在外部瀏覽器中開啟
+            // 檢查是否為 iOS Safari（需要特殊處理）
+            var isIOSSafari = /iPad|iPhone|iPod/.test(userAgent) && /Safari/.test(userAgent) && !/CriOS|FxiOS|OPiOS|mercury/.test(userAgent);
+            
+            if (isInAppBrowser || isLineBrowser) {
+                // 在應用程式內建瀏覽器中，提供更好的用戶體驗
                 var message = currentLanguage === 'en' ? 
-                    'Please open this page in your web browser (Chrome, Safari, etc.) instead of the in-app browser to complete Google login.' : 
-                    '請在外部瀏覽器（Chrome、Safari 等）中開啟此頁面，而不是在應用程式內建瀏覽器中，以完成 Google 登入。';
+                    'To complete Google login, please:\n\n1. Tap the menu button (⋮) in the top right\n2. Select "Open in Browser" or "Open in Safari"\n3. Complete the login process' : 
+                    '為了完成 Google 登入，請：\n\n1. 點擊右上角的選單按鈕 (⋮)\n2. 選擇「在瀏覽器中開啟」或「在 Safari 中開啟」\n3. 完成登入流程';
                 
-                alert(message);
+                // 使用 confirm 而不是 alert，提供更好的用戶體驗
+                var userChoice = confirm(message + '\n\n' + (currentLanguage === 'en' ? 'Click OK to continue with LINE login instead' : '點擊確定使用 LINE 登入'));
+                
+                if (userChoice) {
+                    // 用戶選擇使用 LINE 登入
+                    loginWithLINE();
+                }
+                
                 if (window.addDebugInfo) {
                     addDebugInfo('✗ 檢測到應用程式內建瀏覽器，建議使用外部瀏覽器');
                 }
@@ -2228,17 +2243,52 @@
         }
 
         function showChatPage() {
-            document.getElementById('login-page').classList.add('hidden');
-            document.getElementById('setup-page').classList.add('hidden');
-            document.getElementById('chat-page').classList.remove('hidden');
-            
-            // 更新聊天頁面的語言
-            switchLanguage(currentLanguage);
-            
-            loadQuickActions();
-            
-            // 先載入對話歷史，然後決定是否發送歡迎訊息
-            loadChatHistory();
+            try {
+                // 強制隱藏所有頁面（兼容所有瀏覽器）
+                var pages = ['login-page', 'setup-page', 'user-info-page'];
+                pages.forEach(function(pageId) {
+                    var page = document.getElementById(pageId);
+                    if (page) {
+                        page.style.display = 'none';
+                        page.classList.add('hidden');
+                    }
+                });
+                
+                // 顯示聊天頁面
+                var chatPage = document.getElementById('chat-page');
+                if (chatPage) {
+                    chatPage.style.display = 'block';
+                    chatPage.classList.remove('hidden');
+                }
+                
+                // 確保頁面滾動到頂部（兼容所有瀏覽器）
+                if (window.scrollTo) {
+                    window.scrollTo(0, 0);
+                } else if (document.documentElement.scrollTop !== undefined) {
+                    document.documentElement.scrollTop = 0;
+                } else if (document.body.scrollTop !== undefined) {
+                    document.body.scrollTop = 0;
+                }
+                
+                // 更新聊天頁面的語言
+                if (typeof switchLanguage === 'function') {
+                    switchLanguage(currentLanguage);
+                }
+                
+                if (typeof loadQuickActions === 'function') {
+                    loadQuickActions();
+                }
+                
+                // 先載入對話歷史，然後決定是否發送歡迎訊息
+                if (typeof loadChatHistory === 'function') {
+                    loadChatHistory();
+                }
+                
+                console.log('Chat page shown successfully');
+            } catch (error) {
+                console.error('Error showing chat page:', error);
+                alert('頁面切換失敗，請刷新頁面重試');
+            }
         }
 
         // 處理設定提交
@@ -2301,8 +2351,10 @@
                     return response.json();
                 })
                 .then(function(result) {
+                    console.log('Setup submission result:', result);
                     if (result.ok) {
                         profileId = result.data.profile_id;
+                        console.log('Profile ID received:', profileId);
                         
                         // 儲存 profileId 到本地儲存
                         var userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
@@ -2310,14 +2362,18 @@
                             saveProfileId(userProfile.userId, profileId);
                         }
                         
-                        showChatPage();
+                        // 添加延遲確保 DOM 更新完成
+                        setTimeout(function() {
+                            showChatPage();
+                        }, 100);
                     } else {
-                        alert('提交失敗：' + result.error);
+                        console.error('Setup submission failed:', result.error);
+                        alert('提交失敗：' + (result.error || '未知錯誤'));
                     }
                 })
                 .catch(function(error) {
                     console.error('Setup submission failed:', error);
-                    alert('提交失敗，請檢查網路連接');
+                    alert('提交失敗，請檢查網路連接：' + error.message);
                 });
             } catch (error) {
                 console.error('Setup submission failed:', error);
