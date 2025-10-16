@@ -181,6 +181,36 @@
                 -ms-user-select: none;
                 user-select: none;
             }
+        }
+        
+        /* iOS Safari 按鈕兼容性修復 */
+        button {
+            -webkit-appearance: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        
+        #back-to-setup {
+            min-width: 44px;
+            min-height: 44px;
+            z-index: 10;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            position: relative;
+        }
+        
+        /* 確保按鈕在 iOS Safari 中可點擊 */
+        #back-to-setup::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            z-index: -1;
+        }
             
             .mobile-button {
                 pointer-events: auto !important;
@@ -568,7 +598,7 @@
     <div id="chat-page" class="min-h-screen hidden">
         <div class="max-w-4xl mx-auto bg-white min-h-screen flex flex-col">
             <header class="bg-gradient-to-r from-yellow-400 to-yellow-300 text-gray-800 p-4 text-center relative">
-                <button id="back-to-setup" class="absolute left-4 top-4 text-gray-800 hover:text-gray-600 transition-colors">
+                <button id="back-to-setup" class="absolute left-4 top-4 text-gray-800 hover:text-gray-600 transition-colors" onclick="showLoginPage()" style="cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation;">
                     <span data-zh="← 返回首頁" data-en="← Back to Home">← 返回首頁</span>
                 </button>
                 <button onclick="logout()" class="absolute right-4 top-4 text-gray-800 hover:text-gray-600 transition-colors">
@@ -1074,7 +1104,7 @@
             
             // 綁定事件
             document.getElementById('back-to-home').addEventListener('click', showLoginPage);
-            document.getElementById('back-to-setup').addEventListener('click', showLoginPage);
+            // back-to-setup 現在使用 onclick 屬性，更兼容 iOS Safari
             document.getElementById('setup-form').addEventListener('submit', handleSetupSubmit);
             document.getElementById('send-btn').addEventListener('click', sendMessage);
             document.getElementById('message-input').addEventListener('keypress', function(e) {
@@ -2271,9 +2301,41 @@
 
         // 頁面切換
         function showLoginPage() {
-            document.getElementById('login-page').classList.remove('hidden');
-            document.getElementById('setup-page').classList.add('hidden');
-            document.getElementById('chat-page').classList.add('hidden');
+            try {
+                console.log('Showing login page...');
+                
+                // 強制隱藏所有頁面（兼容所有瀏覽器）
+                var pages = ['setup-page', 'chat-page', 'user-info-page'];
+                pages.forEach(function(pageId) {
+                    var page = document.getElementById(pageId);
+                    if (page) {
+                        page.style.display = 'none';
+                        page.classList.add('hidden');
+                    }
+                });
+                
+                // 顯示登入頁面
+                var loginPage = document.getElementById('login-page');
+                if (loginPage) {
+                    loginPage.style.display = 'block';
+                    loginPage.classList.remove('hidden');
+                }
+                
+                // 確保頁面滾動到頂部（兼容所有瀏覽器）
+                if (window.scrollTo) {
+                    window.scrollTo(0, 0);
+                } else if (document.documentElement.scrollTop !== undefined) {
+                    document.documentElement.scrollTop = 0;
+                } else if (document.body.scrollTop !== undefined) {
+                    document.body.scrollTop = 0;
+                }
+                
+                console.log('Login page shown successfully');
+            } catch (error) {
+                console.error('Error showing login page:', error);
+                // 降級處理：直接重新載入頁面
+                window.location.reload();
+            }
         }
 
         function validateToken(token) {
