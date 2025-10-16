@@ -155,8 +155,10 @@
             TEST_MODE: true
         };
         
-        // LINE Login 配置（需要您設置後填入）
-        window.__LINE_CHANNEL_ID__ = 'YOUR_LINE_CHANNEL_ID'; // 請替換為您的 LINE Channel ID
+        // LINE Login 配置
+        window.__LINE_CHANNEL_ID__ = '2008117059'; // 您的 LINE Channel ID
+        
+        // LINE 登入配置（您的 Channel 是 Messaging API 類型，使用標準 OAuth）
         
         // Google OAuth 配置
         window.__GOOGLE_CLIENT_ID__ = '300123710303-m4j1laa65p664n5vtrdkfvfa7b42c2o6.apps.googleusercontent.com';
@@ -1182,15 +1184,16 @@
                 addDebugInfo('Google 登入按鈕被點擊');
             }
             
-            // 檢查是否在應用程式內建瀏覽器中（支援更多瀏覽器）
+            // 檢查是否在應用程式內建瀏覽器中（但允許 LINE 內建瀏覽器）
             var userAgent = navigator.userAgent || '';
-            var isInAppBrowser = /FBAN|FBAV|Instagram|Line|WhatsApp|Twitter|LinkedInApp|Skype|Pinterest|Snapchat|WeChat|Telegram|Viber|Messenger|MicroMessenger|QQ|UCBrowser|Opera Mini|Opera Mobi/i.test(userAgent);
+            var isInAppBrowser = /FBAN|FBAV|Instagram|WhatsApp|Twitter|LinkedInApp|Skype|Pinterest|Snapchat|WeChat|Telegram|Viber|Messenger|MicroMessenger|QQ|UCBrowser|Opera Mini|Opera Mobi/i.test(userAgent);
             var isLineBrowser = /Line/i.test(userAgent);
             
             // 檢查是否為 iOS Safari（需要特殊處理）
             var isIOSSafari = /iPad|iPhone|iPod/.test(userAgent) && /Safari/.test(userAgent) && !/CriOS|FxiOS|OPiOS|mercury/.test(userAgent);
             
-            if (isInAppBrowser || isLineBrowser) {
+            // 只對非 LINE 的內建瀏覽器進行限制
+            if (isInAppBrowser && !isLineBrowser) {
                 // 在應用程式內建瀏覽器中，提供更好的用戶體驗
                 var message = currentLanguage === 'en' ? 
                     'To complete Google login, please:\n\n1. Tap the menu button (⋮) in the top right\n2. Select "Open in Browser" or "Open in Safari"\n3. Complete the login process' : 
@@ -1210,6 +1213,27 @@
                 return;
             }
             
+            // LINE 內建瀏覽器允許直接進行 Google 登入
+            if (isLineBrowser) {
+                if (window.addDebugInfo) {
+                    addDebugInfo('✓ 檢測到 LINE 內建瀏覽器，允許 Google 登入');
+                }
+                
+                // 在 LINE 內建瀏覽器中，提供選擇
+                var lineMessage = currentLanguage === 'en' ? 
+                    'You are using LINE browser. You can:\n\n1. Continue with Google login (may not work)\n2. Use LINE login instead (recommended)\n3. Open in external browser' :
+                    '您正在使用 LINE 瀏覽器。您可以：\n\n1. 繼續使用 Google 登入（可能無法使用）\n2. 使用 LINE 登入（推薦）\n3. 在外部瀏覽器中開啟';
+                
+                var choice = confirm(lineMessage + '\n\n' + (currentLanguage === 'en' ? 'Click OK for LINE login, Cancel for Google login' : '點擊確定使用 LINE 登入，取消使用 Google 登入'));
+                
+                if (choice) {
+                    // 用戶選擇 LINE 登入
+                    loginWithLINE();
+                    return;
+                }
+                // 如果用戶選擇 Google 登入，繼續執行下面的代碼
+            }
+            
             // 使用彈出視窗進行 Google 登入
             var googleAuthUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' +
                 'client_id=' + (window.__GOOGLE_CLIENT_ID__ || '300123710303-m4j1laa65p664n5vtrdkfvfa7b42c2o6.apps.googleusercontent.com') + '&' +
@@ -1219,6 +1243,13 @@
                 'state=popup_login';
             
             console.log('Opening Google login popup:', googleAuthUrl);
+            
+            // 在 LINE 內建瀏覽器中，使用直接跳轉而不是彈出視窗
+            if (isLineBrowser) {
+                console.log('Using direct redirect for LINE browser');
+                window.location.href = googleAuthUrl;
+                return;
+            }
             if (window.addDebugInfo) {
                 addDebugInfo('準備打開 Google 登入彈出視窗');
                 addDebugInfo('URL: ' + googleAuthUrl);
@@ -1271,27 +1302,73 @@
         }
         
         function loginWithLINE() {
-            // 獲取 LINE Login URL
-            fetch('https://aistudentbackend.zeabur.app/api/v1/auth/line/login')
-                .then(function(response) {
-                    return response.json();
-                })
-                .then(function(data) {
-                    if (data.ok) {
-                        // 重定向到 LINE Login
-                        window.location.href = data.login_url;
-                    } else {
+            console.log('LINE login button clicked');
+            
+            // 檢查是否在 LINE 內建瀏覽器中
+            var userAgent = navigator.userAgent || '';
+            var isLineBrowser = /Line/i.test(userAgent);
+            
+            if (isLineBrowser) {
+                console.log('Detected LINE in-app browser');
+                
+                // 在 LINE 內建瀏覽器中，提供更好的用戶體驗提示
+                var message = currentLanguage === 'en' ? 
+                    'You are using LINE browser. This will open LINE authorization page.\n\n' +
+                    'If you see QR code, you can:\n' +
+                    '1. Use "Login via email account" button below\n' +
+                    '2. Or use your LINE app to scan QR code\n\n' +
+                    'Continue with LINE login?' :
+                    '您正在使用 LINE 瀏覽器。這將開啟 LINE 授權頁面。\n\n' +
+                    '如果看到 QR code，您可以：\n' +
+                    '1. 使用下方的「透過電子郵件帳號登入」按鈕\n' +
+                    '2. 或使用 LINE App 掃描 QR code\n\n' +
+                    '繼續使用 LINE 登入？';
+                
+                if (confirm(message)) {
+                    // 使用後端 API 獲取 LINE 登入 URL
+                    fetch('https://aistudentbackend.zeabur.app/api/v1/auth/line/login')
+                        .then(function(response) {
+                            return response.json();
+                        })
+                        .then(function(data) {
+                            if (data.ok) {
+                                console.log('Redirecting to LINE login:', data.login_url);
+                                window.location.href = data.login_url;
+                            } else {
+                                alert(currentLanguage === 'en' ? 
+                                    'LINE login is not available. Please use Google login or skip login.' : 
+                                    'LINE 登入功能暫時無法使用，請使用 Google 登入或跳過登入。');
+                            }
+                        })
+                        .catch(function(error) {
+                            console.error('LINE Login error:', error);
+                            alert(currentLanguage === 'en' ? 
+                                'LINE login failed. Please try again or use Google login.' : 
+                                'LINE 登入失敗，請重試或使用 Google 登入。');
+                        });
+                }
+            } else {
+                // 在外部瀏覽器中，直接使用 LINE 登入
+                fetch('https://aistudentbackend.zeabur.app/api/v1/auth/line/login')
+                    .then(function(response) {
+                        return response.json();
+                    })
+                    .then(function(data) {
+                        if (data.ok) {
+                            window.location.href = data.login_url;
+                        } else {
+                            alert(currentLanguage === 'en' ? 
+                                'LINE login is not available. Please use Google login or skip login.' : 
+                                'LINE 登入功能暫時無法使用，請使用 Google 登入或跳過登入。');
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('LINE Login error:', error);
                         alert(currentLanguage === 'en' ? 
-                            'LINE login is not available. Please use Google login or skip login.' : 
-                            'LINE 登入功能暫時無法使用，請使用 Google 登入或跳過登入。');
-                    }
-                })
-                .catch(function(error) {
-                    console.error('LINE Login error:', error);
-                    alert(currentLanguage === 'en' ? 
-                        'LINE login failed. Please try again or use Google login.' : 
-                        'LINE 登入失敗，請重試或使用 Google 登入。');
-                });
+                            'LINE login failed. Please try again or use Google login.' : 
+                            'LINE 登入失敗，請重試或使用 Google 登入。');
+                    });
+            }
         }
         
         // 繼續到聊天對話框
