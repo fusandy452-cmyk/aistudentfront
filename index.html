@@ -1128,8 +1128,16 @@
                         
                         console.log('User has existing profile:', result.profile_data);
                     } else {
-                        // 第一次登入，沒有設定資料
+                        // 第一次登入，沒有設定資料，自動跳轉到填寫頁面
                         console.log('User is first time login, needs to complete setup');
+                        
+                        // 顯示提示訊息
+                        alert(currentLanguage === 'en' ? 
+                            'Welcome! Please complete your study abroad requirements setup first.' : 
+                            '歡迎！請先完成您的留學需求設定。');
+                        
+                        // 自動跳轉到設定頁面
+                        showSetupPage();
                     }
                 }
             })
