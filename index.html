@@ -1253,14 +1253,51 @@
         
         // 繼續到聊天對話框
         function continueToChat() {
-            // 檢查是否有 profileId
-            if (profileId) {
-                // 已有設定資料，直接進入聊天
-                showChatPage();
-            } else {
-                // 沒有設定資料，跳轉到設定頁面
-                showSetupPage();
+            const jwt = localStorage.getItem('jwt');
+            if (!jwt) {
+                alert(currentLanguage === 'en' ? 'Please login first.' : '請先登入。');
+                return;
             }
+            
+            // 檢查用戶是否有留學需求資料
+            fetch(window.__CONFIG__.API_BASE + '/api/v1/user/check-profile', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + jwt,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.ok) {
+                    if (result.has_profile) {
+                        // 已有留學需求資料，直接進入聊天
+                        console.log('User has profile, going to chat');
+                        showChatPage();
+                    } else {
+                        // 沒有留學需求資料，跳轉到設定頁面
+                        console.log('User has no profile, going to setup');
+                        showSetupPage();
+                    }
+                } else {
+                    console.error('Error checking user profile:', result.error);
+                    // 出錯時，如果有本地 profileId 就直接聊天，否則跳轉設定
+                    if (profileId) {
+                        showChatPage();
+                    } else {
+                        showSetupPage();
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error checking user profile:', error);
+                // 出錯時，如果有本地 profileId 就直接聊天，否則跳轉設定
+                if (profileId) {
+                    showChatPage();
+                } else {
+                    showSetupPage();
+                }
+            });
         }
         
         // 編輯用戶設定
