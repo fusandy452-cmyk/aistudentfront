@@ -2048,13 +2048,24 @@
                     throw new Error('Token expired');
                 }
                 
-                // Token 有效，顯示設定頁面
-                showSetupPage();
+                // Token 有效，檢查是否有用戶資料並顯示用戶資訊
+                var userProfile = localStorage.getItem('userProfile');
+                if (userProfile) {
+                    try {
+                        var user = JSON.parse(userProfile);
+                        showUserInfo(user);
+                    } catch (e) {
+                        console.error('Error parsing user profile:', e);
+                        showLoginButtons();
+                    }
+                } else {
+                    showLoginButtons();
+                }
             } catch (error) {
                 console.log('Token validation failed:', error);
                 // Token 無效，清除並顯示登入頁面
                 localStorage.removeItem('jwt');
-                showLoginPage();
+                showLoginButtons();
             }
         }
 
