@@ -209,6 +209,30 @@
                 -webkit-overflow-scrolling: touch !important;
             }
             
+            /* AI 載入動畫 */
+            @keyframes ai-loading-bounce {
+                0%, 80%, 100% {
+                    transform: scale(0);
+                    opacity: 0.5;
+                }
+                40% {
+                    transform: scale(1);
+                    opacity: 1;
+                }
+            }
+            
+            .ai-loading-dot {
+                animation: ai-loading-bounce 1.4s infinite ease-in-out both;
+            }
+            
+            .ai-loading-dot:nth-child(1) {
+                animation-delay: -0.32s;
+            }
+            
+            .ai-loading-dot:nth-child(2) {
+                animation-delay: -0.16s;
+            }
+            
             .message-bubble {
                 max-width: 85% !important;
                 word-wrap: break-word !important;
@@ -2322,6 +2346,9 @@
             addMessage(message, 'user');
             input.value = '';
 
+            // 顯示 AI 載入動畫
+            showAILoading();
+
             // 檢查是否有 profileId，如果沒有則使用空值
             console.log('Sending message with profileId:', profileId);
 
@@ -2361,6 +2388,10 @@
                 })
                 .then(function(result) {
                     console.log('Chat response:', result);
+                    
+                    // 隱藏載入動畫
+                    hideAILoading();
+                    
                     if (result.ok && result.reply) {
                         addMessage(result.reply, 'ai');
                     } else {
@@ -2370,14 +2401,71 @@
                 })
                 .catch(function(error) {
                     console.error('Chat failed:', error);
+                    
+                    // 隱藏載入動畫
+                    hideAILoading();
+                    
                     addMessage('抱歉，網路連接出現問題。請檢查您的網路連接。', 'ai');
                 });
             } catch (error) {
                 console.error('Chat failed:', error);
+                
+                // 隱藏載入動畫
+                hideAILoading();
+                
                 addMessage('抱歉，網路連接出現問題。請檢查您的網路連接。', 'ai');
             }
         }
 
+        // 顯示 AI 載入動畫
+        function showAILoading() {
+            var chatContainer = document.getElementById('chat-container');
+            var loadingWrapper = document.createElement('div');
+            loadingWrapper.id = 'ai-loading-message';
+            loadingWrapper.className = 'mb-4';
+            
+            var currentTime = new Date().toLocaleTimeString('zh-TW', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            var aiTitle = currentLanguage === 'en' ? 'AI Study Abroad Advisor' : 'AI 留學顧問';
+            var aiSubtitle = currentLanguage === 'en' ? 'Your Exclusive Study Abroad Planning Expert' : '您的專屬留學規劃專家';
+            
+            loadingWrapper.innerHTML = 
+                '<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">' +
+                    '<div class="flex items-center mb-4">' +
+                        '<div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">AI</div>' +
+                        '<div>' +
+                            '<h3 class="font-semibold text-gray-800">' + aiTitle + '</h3>' +
+                            '<p class="text-sm text-gray-500">' + aiSubtitle + '</p>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="flex items-center text-gray-600">' +
+                        '<div class="flex space-x-1 mr-3">' +
+                            '<div class="w-2 h-2 bg-blue-500 rounded-full ai-loading-dot"></div>' +
+                            '<div class="w-2 h-2 bg-blue-500 rounded-full ai-loading-dot"></div>' +
+                            '<div class="w-2 h-2 bg-blue-500 rounded-full ai-loading-dot"></div>' +
+                        '</div>' +
+                        '<span class="text-sm">' + (currentLanguage === 'en' ? 'AI is thinking...' : 'AI 正在思考中...') + '</span>' +
+                    '</div>' +
+                    '<div class="text-xs text-gray-400 mt-3">' + currentTime + '</div>' +
+                '</div>';
+            
+            chatContainer.appendChild(loadingWrapper);
+            
+            // 滾動到底部
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        // 隱藏 AI 載入動畫
+        function hideAILoading() {
+            var loadingMessage = document.getElementById('ai-loading-message');
+            if (loadingMessage) {
+                loadingMessage.remove();
+            }
+        }
+        
         // 添加消息到聊天
         function addMessage(message, sender, shouldScroll = true) {
             var chatContainer = document.getElementById('chat-container');
@@ -2409,7 +2497,7 @@
                                 '<p class="text-sm text-gray-500">' + aiSubtitle + '</p>' +
                             '</div>' +
                         '</div>' +
-                        '<div class="text-gray-700 leading-relaxed">' + message + '</div>' +
+                        '<div class="text-gray-700 leading-relaxed whitespace-pre-line">' + message + '</div>' +
                         '<div class="text-xs text-gray-400 mt-3">' + currentTime + '</div>' +
                     '</div>';
             }
@@ -2521,7 +2609,8 @@
                 return;
             }
             
-            // 不預先顯示歡迎訊息，只發送 API 請求
+            // 顯示 AI 載入動畫
+            showAILoading();
             
             // 同時發送 API 請求獲取更詳細的回覆
             try {
@@ -2552,6 +2641,9 @@
                     return response.json();
                 })
                 .then(function(result) {
+                    // 隱藏載入動畫
+                    hideAILoading();
+                    
                     if (result.ok && result.reply) {
                         addMessage(result.reply, 'ai');
                     } else {
@@ -2565,9 +2657,15 @@
                 })
                 .catch(function(error) {
                     console.error('Welcome message error:', error);
+                    
+                    // 隱藏載入動畫
+                    hideAILoading();
                 });
             } catch (error) {
                 console.error('Welcome message error:', error);
+                
+                // 隱藏載入動畫
+                hideAILoading();
             }
         }
 
