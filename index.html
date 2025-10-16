@@ -1748,6 +1748,12 @@
             document.getElementById('settings-display-name').value = userProfile.name || '';
             document.getElementById('settings-language').value = currentLanguage;
             
+            // 檢查是否有 profileId
+            if (!profileId) {
+                console.warn('No profileId found, cannot load profile data');
+                return;
+            }
+            
             // 從後端載入通知設定
             loadNotificationSettings();
             
@@ -2053,8 +2059,9 @@
             switchLanguage(currentLanguage);
             
             loadQuickActions();
-            // 自動發送打招呼訊息
-            sendWelcomeMessage();
+            
+            // 先載入對話歷史，然後決定是否發送歡迎訊息
+            loadChatHistory();
         }
 
         // 處理設定提交
@@ -2212,7 +2219,7 @@
         }
 
         // 添加消息到聊天
-        function addMessage(message, sender) {
+        function addMessage(message, sender, shouldScroll = true) {
             var chatContainer = document.getElementById('chat-container');
             var messageWrapper = document.createElement('div');
             
@@ -2248,12 +2255,111 @@
             }
             
             chatContainer.appendChild(messageWrapper);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            if (shouldScroll) {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+            
+            // 保存對話歷史到 localStorage
+            saveChatHistory();
+        }
+
+        // 保存對話歷史
+        function saveChatHistory() {
+            if (!profileId) return;
+            
+            try {
+                var messages = [];
+                var chatContainer = document.getElementById('chat-container');
+                var messageElements = chatContainer.children;
+                
+                for (var i = 0; i < messageElements.length; i++) {
+                    var element = messageElements[i];
+                    var messageText = '';
+                    var messageType = '';
+                    
+                    if (element.classList.contains('justify-end')) {
+                        // 用戶訊息
+                        var userMessage = element.querySelector('.text-sm');
+                        if (userMessage) {
+                            messageText = userMessage.textContent;
+                            messageType = 'user';
+                        }
+                    } else {
+                        // AI 訊息
+                        var aiMessage = element.querySelector('.text-gray-700');
+                        if (aiMessage) {
+                            messageText = aiMessage.textContent;
+                            messageType = 'ai';
+                        }
+                    }
+                    
+                    if (messageText && messageType) {
+                        messages.push({
+                            content: messageText,
+                            type: messageType,
+                            timestamp: new Date().toISOString()
+                        });
+                    }
+                }
+                
+                // 限制歷史記錄數量（最多 50 條）
+                if (messages.length > 50) {
+                    messages = messages.slice(-50);
+                }
+                
+                localStorage.setItem('chatHistory_' + profileId, JSON.stringify(messages));
+            } catch (error) {
+                console.error('Error saving chat history:', error);
+            }
+        }
+
+        // 載入對話歷史
+        function loadChatHistory() {
+            if (!profileId) {
+                // 沒有 profileId，直接發送歡迎訊息
+                sendWelcomeMessage();
+                return;
+            }
+            
+            // 從 localStorage 載入對話歷史
+            var chatHistory = localStorage.getItem('chatHistory_' + profileId);
+            if (chatHistory) {
+                try {
+                    var messages = JSON.parse(chatHistory);
+                    // 清空現有訊息
+                    var chatContainer = document.getElementById('chat-messages');
+                    chatContainer.innerHTML = '';
+                    
+                    // 載入歷史訊息
+                    messages.forEach(function(msg) {
+                        addMessage(msg.content, msg.type, false); // false = 不滾動到底部
+                    });
+                    
+                    // 最後滾動到底部
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                    
+                    console.log('Chat history loaded:', messages.length, 'messages');
+                } catch (error) {
+                    console.error('Error loading chat history:', error);
+                    sendWelcomeMessage();
+                }
+            } else {
+                // 沒有歷史記錄，發送歡迎訊息
+                sendWelcomeMessage();
+            }
         }
 
         // 發送歡迎訊息
         function sendWelcomeMessage() {
             if (!profileId) return;
+            
+            // 檢查是否已有對話歷史
+            var existingMessages = document.querySelectorAll('.message.ai');
+            if (existingMessages.length > 0) {
+                console.log('Chat history exists, skipping welcome message');
+                return;
+            }
             
             // 不預先顯示歡迎訊息，只發送 API 請求
             
