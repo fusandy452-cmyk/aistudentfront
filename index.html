@@ -981,6 +981,106 @@
         var currentRole = 'student';
         var currentLanguage = 'zh';
         var profileId = null;
+        var eventSource = null; // SSE 連線
+        
+        // 設置 JWT Cookie
+        function setJWTCookie(jwt) {
+            document.cookie = `jwt=${jwt}; path=/; max-age=86400; SameSite=Lax`;
+        }
+        
+        // 清除 JWT Cookie
+        function clearJWTCookie() {
+            document.cookie = 'jwt=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        }
+        
+        // 關閉 SSE 連線
+        function closeStream() {
+            if (eventSource) {
+                console.log('Closing SSE connection...');
+                eventSource.close();
+                eventSource = null;
+            }
+        }
+        
+        // 開始 SSE 串流
+        function startStreaming(message, messageId) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const jwt = localStorage.getItem('jwt');
+                    if (!jwt) {
+                        reject(new Error('No JWT token'));
+                        return;
+                    }
+                    
+                    // 設置 Cookie
+                    setJWTCookie(jwt);
+                    
+                    // 關閉舊連線
+                    closeStream();
+                    
+                    // 創建新的 EventSource
+                    const streamUrl = window.__CONFIG__.API_BASE + '/api/v1/chat/stream';
+                    eventSource = new EventSource(streamUrl + '?message=' + encodeURIComponent(message) + 
+                                                 '&profile_id=' + encodeURIComponent(profileId || '') + 
+                                                 '&language=' + encodeURIComponent(currentLanguage) + 
+                                                 '&user_role=' + encodeURIComponent(currentRole));
+                    
+                    let fullResponse = '';
+                    let isComplete = false;
+                    
+                    eventSource.onmessage = function(event) {
+                        const data = event.data;
+                        
+                        // 忽略心跳
+                        if (data === ': keep-alive') {
+                            return;
+                        }
+                        
+                        // 檢查是否完成
+                        if (data === '[DONE]') {
+                            isComplete = true;
+                            closeStream();
+                            resolve(fullResponse);
+                            return;
+                        }
+                        
+                        // 累積回應內容
+                        fullResponse += data;
+                        
+                        // 更新訊息氣泡內容
+                        const messageElement = document.getElementById(messageId);
+                        if (messageElement) {
+                            const contentElement = messageElement.querySelector('.message-content');
+                            if (contentElement) {
+                                contentElement.textContent = fullResponse;
+                            }
+                        }
+                    };
+                    
+                    eventSource.onerror = function(error) {
+                        console.error('SSE error:', error);
+                        closeStream();
+                        if (!isComplete) {
+                            reject(new Error('SSE connection failed'));
+                        }
+                    };
+                    
+                    // 設置超時
+                    setTimeout(() => {
+                        if (!isComplete) {
+                            console.warn('SSE timeout, falling back to regular API');
+                            closeStream();
+                            reject(new Error('SSE timeout'));
+                        }
+                    }, 30000); // 30 秒超時
+                    
+                } catch (error) {
+                    console.error('Error starting stream:', error);
+                    closeStream();
+                    reject(error);
+                }
+            });
+        }
         
         // 從本地儲存載入 profileId
         function loadProfileId() {
@@ -2548,8 +2648,13 @@
             
             if (!message) return;
 
+            // 禁用發送按鈕
+            var sendBtn = document.getElementById('send-btn');
+            sendBtn.disabled = true;
+            sendBtn.textContent = '發送中...';
+
             // 添加用戶消息到聊天
-            addMessage(message, 'user');
+            var userMessageId = addMessage(message, 'user');
             input.value = '';
 
             // 顯示 AI 載入動畫
@@ -2558,69 +2663,121 @@
             // 檢查是否有 profileId，如果沒有則使用空值
             console.log('Sending message with profileId:', profileId);
 
-            try {
-                var authHeader = {};
-                var jwt = localStorage.getItem('jwt');
-                if (jwt) {
-                    authHeader['Authorization'] = 'Bearer ' + jwt;
-                }
-                
-                var headers = {
-                    'Content-Type': 'application/json'
-                };
-                for (var key in authHeader) {
-                    headers[key] = authHeader[key];
-                }
-                
-                console.log('Sending chat request with:', {
-                    profile_id: profileId,
-                    message: message,
-                    user_role: currentRole,
-                    language: currentLanguage
+            // 創建 AI 回應訊息氣泡（空內容）
+            var aiMessageId = addMessage('', 'ai', false);
+
+            // 嘗試使用 SSE 串流
+            startStreaming(message, aiMessageId)
+                .then(function(fullResponse) {
+                    console.log('SSE stream completed successfully');
+                    hideAILoading();
+                    
+                    // 重新啟用發送按鈕
+                    sendBtn.disabled = false;
+                    sendBtn.textContent = currentLanguage === 'en' ? 'Send' : '發送';
+                })
+                .catch(function(error) {
+                    console.warn('SSE failed, falling back to regular API:', error);
+                    hideAILoading();
+                    
+                    // Fallback 到原本的 POST API
+                    fallbackToRegularAPI(message, aiMessageId)
+                        .finally(function() {
+                            // 重新啟用發送按鈕
+                            sendBtn.disabled = false;
+                            sendBtn.textContent = currentLanguage === 'en' ? 'Send' : '發送';
+                        });
                 });
-                
-                fetch(window.__CONFIG__.API_BASE + '/api/v1/chat', {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify({
+        }
+        
+        // Fallback 到原本的 POST API
+        function fallbackToRegularAPI(message, aiMessageId) {
+            return new Promise(function(resolve, reject) {
+                try {
+                    var authHeader = {};
+                    var jwt = localStorage.getItem('jwt');
+                    if (jwt) {
+                        authHeader['Authorization'] = 'Bearer ' + jwt;
+                    }
+                    
+                    var headers = {
+                        'Content-Type': 'application/json'
+                    };
+                    for (var key in authHeader) {
+                        headers[key] = authHeader[key];
+                    }
+                    
+                    console.log('Fallback: Sending chat request with:', {
                         profile_id: profileId,
                         message: message,
                         user_role: currentRole,
                         language: currentLanguage
+                    });
+                    
+                    fetch(window.__CONFIG__.API_BASE + '/api/v1/chat', {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify({
+                            profile_id: profileId,
+                            message: message,
+                            user_role: currentRole,
+                            language: currentLanguage
+                        })
                     })
-                })
-                .then(function(response) {
-                    return response.json();
-                })
-                .then(function(result) {
-                    console.log('Chat response:', result);
-                    
-                    // 隱藏載入動畫
-                    hideAILoading();
-                    
-                    if (result.ok && result.reply) {
-                        addMessage(result.reply, 'ai');
-                    } else {
-                        console.error('Invalid response:', result);
-                        addMessage('抱歉，我無法處理您的請求。請稍後再試。', 'ai');
+                    .then(function(response) {
+                        return response.json();
+                    })
+                    .then(function(result) {
+                        console.log('Fallback chat response:', result);
+                        
+                        if (result.ok && result.reply) {
+                            // 更新 AI 回應內容
+                            var messageElement = document.getElementById(aiMessageId);
+                            if (messageElement) {
+                                var contentElement = messageElement.querySelector('.message-content');
+                                if (contentElement) {
+                                    contentElement.textContent = result.reply;
+                                }
+                            }
+                            resolve(result.reply);
+                        } else {
+                            console.error('Invalid fallback response:', result);
+                            var errorMsg = '抱歉，我無法處理您的請求。請稍後再試。';
+                            var messageElement = document.getElementById(aiMessageId);
+                            if (messageElement) {
+                                var contentElement = messageElement.querySelector('.message-content');
+                                if (contentElement) {
+                                    contentElement.textContent = errorMsg;
+                                }
+                            }
+                            reject(new Error('Invalid response'));
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('Fallback chat failed:', error);
+                        var errorMsg = '抱歉，網路連接出現問題。請檢查您的網路連接。';
+                        var messageElement = document.getElementById(aiMessageId);
+                        if (messageElement) {
+                            var contentElement = messageElement.querySelector('.message-content');
+                            if (contentElement) {
+                                contentElement.textContent = errorMsg;
+                            }
+                        }
+                        reject(error);
+                    });
+                } catch (error) {
+                    console.error('Fallback chat failed:', error);
+                    var errorMsg = '抱歉，網路連接出現問題。請檢查您的網路連接。';
+                    var messageElement = document.getElementById(aiMessageId);
+                    if (messageElement) {
+                        var contentElement = messageElement.querySelector('.message-content');
+                        if (contentElement) {
+                            contentElement.textContent = errorMsg;
+                        }
                     }
-                })
-                .catch(function(error) {
-                    console.error('Chat failed:', error);
-                    
-                    // 隱藏載入動畫
-                    hideAILoading();
-                    
-                    addMessage('抱歉，網路連接出現問題。請檢查您的網路連接。', 'ai');
-                });
-            } catch (error) {
-                console.error('Chat failed:', error);
-                
-                // 隱藏載入動畫
-                hideAILoading();
-                
-                addMessage('抱歉，網路連接出現問題。請檢查您的網路連接。', 'ai');
-            }
+                    reject(error);
+                }
+            });
         }
 
         // 顯示 AI 載入動畫
@@ -2677,6 +2834,10 @@
             var chatContainer = document.getElementById('chat-container');
             var messageWrapper = document.createElement('div');
             
+            // 生成唯一的 messageId
+            var messageId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            messageWrapper.id = messageId;
+            
             var currentTime = new Date().toLocaleTimeString('zh-TW', { 
                 hour: '2-digit', 
                 minute: '2-digit' 
@@ -2703,7 +2864,7 @@
                                 '<p class="text-sm text-gray-500">' + aiSubtitle + '</p>' +
                             '</div>' +
                         '</div>' +
-                        '<div class="text-gray-700 leading-relaxed whitespace-pre-line">' + message + '</div>' +
+                        '<div class="message-content text-gray-700 leading-relaxed whitespace-pre-line">' + message + '</div>' +
                         '<div class="text-xs text-gray-400 mt-3">' + currentTime + '</div>' +
                     '</div>';
             }
@@ -2716,6 +2877,9 @@
             
             // 保存對話歷史到 localStorage
             saveChatHistory();
+            
+            // 返回 messageId
+            return messageId;
         }
 
         // 保存對話歷史
@@ -2940,6 +3104,19 @@
                     localStorage.removeItem('userProfile');
                 }
             }
+        };
+        
+        // 頁面離開時關閉 SSE 連線
+        window.addEventListener('beforeunload', function() {
+            closeStream();
+        });
+        
+        // 頁面隱藏時關閉 SSE 連線
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                closeStream();
+            }
+        });
             
             // 檢查 URL 參數中的 token
             var urlParams = new URLSearchParams(window.location.search);
