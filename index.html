@@ -3183,16 +3183,16 @@
             })
             .then(response => response.json())
             .then(data => {
-                if (data.ok && data.user) {
+                if (data.ok && data.data && data.data.user) {
                     // 更新本地用戶資料
-                    localStorage.setItem('userProfile', JSON.stringify(data.user));
+                    localStorage.setItem('userProfile', JSON.stringify(data.data.user));
                     localStorage.setItem('lastSyncTime', Date.now().toString());
                     
                     console.log('User data synced across devices');
                     
                     // 如果有新的 profileId，更新它
-                    if (data.profileId && data.profileId !== profileId) {
-                        profileId = data.profileId;
+                    if (data.data.profileId && data.data.profileId !== profileId) {
+                        profileId = data.data.profileId;
                         localStorage.setItem('profileId', profileId);
                         console.log('Profile ID updated from sync:', profileId);
                     }
@@ -3200,6 +3200,7 @@
             })
             .catch(error => {
                 console.log('Sync failed (this is normal if no server sync endpoint):', error);
+                // 不拋出錯誤，避免影響頁面功能
             });
         }
         
@@ -3219,8 +3220,12 @@
                     showUserInfo(userProfile);
                     console.log('User already logged in:', userProfile.name);
                     
-                    // 檢查跨設備同步
-                    checkCrossDeviceSync();
+                    // 檢查跨設備同步（安全調用）
+                    try {
+                        checkCrossDeviceSync();
+                    } catch (e) {
+                        console.log('Cross-device sync check failed:', e);
+                    }
                 } catch (e) {
                     console.error('Error parsing user profile:', e);
                     localStorage.removeItem('userProfile');
