@@ -550,7 +550,7 @@
             
             if (isMobile) {
                 // 手機環境：直接跳轉到 Google OAuth
-                var googleAuthUrl = 'https://accounts.google.com/oauth/authorize?' +
+                var googleAuthUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' +
                     'client_id=300123710303-m4j1laa65p664n5vtrdkfvfa7b42c2o6.apps.googleusercontent.com&' +
                     'redirect_uri=https://aistudentbackend.zeabur.app/auth/google/callback&' +
                     'response_type=code&' +
@@ -595,7 +595,16 @@
                     }
                 }
             });
-            google.accounts.id.prompt();
+            
+            // 改用直接跳轉方式（統一使用 OAuth 回調）
+            var googleAuthUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' +
+                'client_id=300123710303-m4j1laa65p664n5vtrdkfvfa7b42c2o6.apps.googleusercontent.com&' +
+                'redirect_uri=https://aistudentbackend.zeabur.app/auth/google/callback&' +
+                'response_type=code&' +
+                'scope=openid email profile&' +
+                'state=desktop_login';
+            
+            window.location.href = googleAuthUrl;
         }
 
         function loginWithLINE() {
