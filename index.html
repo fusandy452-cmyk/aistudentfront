@@ -7,12 +7,158 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script>
+        // 調試模式開關 (按 Ctrl+Shift+D 開啟)
+        window.DEBUG_MODE = false;
+        
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+                window.DEBUG_MODE = !window.DEBUG_MODE;
+                toggleDebugPanel();
+            }
+        });
+        
+        function toggleDebugPanel() {
+            let panel = document.getElementById('debug-panel');
+            if (!panel) {
+                createDebugPanel();
+            } else {
+                panel.style.display = window.DEBUG_MODE ? 'block' : 'none';
+            }
+        }
+        
+        function createDebugPanel() {
+            const panel = document.createElement('div');
+            panel.id = 'debug-panel';
+            panel.style.cssText = `
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                width: 400px;
+                max-height: 500px;
+                background: #f0f0f0;
+                border: 2px solid #333;
+                border-radius: 8px;
+                padding: 15px;
+                font-family: monospace;
+                font-size: 12px;
+                z-index: 10000;
+                overflow-y: auto;
+                display: ${window.DEBUG_MODE ? 'block' : 'none'};
+            `;
+            
+            panel.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h3 style="margin: 0; color: #333;">🔧 調試面板</h3>
+                    <button onclick="clearDebugInfo()" style="padding: 2px 6px; font-size: 10px;">清除</button>
+                </div>
+                <div id="debug-info" style="background: white; padding: 10px; border-radius: 4px; min-height: 200px; max-height: 300px; overflow-y: auto;"></div>
+                <div style="margin-top: 10px;">
+                    <button onclick="testGoogleAPI()" style="padding: 4px 8px; margin: 2px; font-size: 10px;">測試 Google API</button>
+                    <button onclick="testBackendConfig()" style="padding: 4px 8px; margin: 2px; font-size: 10px;">測試後端</button>
+                    <button onclick="testGoogleLogin()" style="padding: 4px 8px; margin: 2px; font-size: 10px;">測試登入</button>
+                </div>
+                <div style="margin-top: 5px; font-size: 10px; color: #666;">
+                    按 Ctrl+Shift+D 切換調試面板
+                </div>
+            `;
+            
+            document.body.appendChild(panel);
+            
+            // 添加調試函數
+            window.addDebugInfo = function(message) {
+                const debugInfo = document.getElementById('debug-info');
+                if (!debugInfo) return;
+                
+                const div = document.createElement('div');
+                div.textContent = new Date().toLocaleTimeString() + ': ' + message;
+                debugInfo.appendChild(div);
+                debugInfo.scrollTop = debugInfo.scrollHeight;
+                console.log('[DEBUG]', message);
+            };
+            
+            window.clearDebugInfo = function() {
+                const debugInfo = document.getElementById('debug-info');
+                if (debugInfo) debugInfo.innerHTML = '';
+            };
+            
+            window.testGoogleAPI = function() {
+                addDebugInfo('測試 Google API 載入狀態...');
+                
+                if (typeof google !== 'undefined') {
+                    addDebugInfo('✓ Google API 已載入');
+                    if (google.accounts) {
+                        addDebugInfo('✓ Google Accounts API 可用');
+                    } else {
+                        addDebugInfo('✗ Google Accounts API 不可用');
+                    }
+                } else {
+                    addDebugInfo('✗ Google API 未載入');
+                }
+            };
+            
+            window.testBackendConfig = function() {
+                addDebugInfo('測試後端配置...');
+                
+                fetch(window.__CONFIG__.API_BASE + '/api/v1/auth/config')
+                    .then(r => r.json())
+                    .then(cfg => {
+                        addDebugInfo('後端配置響應: ' + JSON.stringify(cfg));
+                        
+                        if (cfg && cfg.ok && cfg.google && cfg.google.client_id) {
+                            addDebugInfo('✓ Google Client ID 配置正確: ' + cfg.google.client_id);
+                            window.__GOOGLE_CLIENT_ID__ = cfg.google.client_id;
+                        } else {
+                            addDebugInfo('✗ Google Client ID 配置有問題');
+                        }
+                    })
+                    .catch(error => {
+                        addDebugInfo('✗ 後端配置請求失敗: ' + error.message);
+                    });
+            };
+            
+            window.testGoogleLogin = function() {
+                addDebugInfo('測試 Google 登入（彈出視窗模式）...');
+                
+                const clientId = window.__GOOGLE_CLIENT_ID__ || '300123710303-m4j1laa65p664n5vtrdkfvfa7b42c2o6.apps.googleusercontent.com';
+                addDebugInfo('使用 Client ID: ' + clientId);
+                
+                const googleAuthUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' +
+                    'client_id=' + clientId + '&' +
+                    'redirect_uri=https://aistudentbackend.zeabur.app/auth/google/callback&' +
+                    'response_type=code&' +
+                    'scope=openid email profile&' +
+                    'state=popup_login';
+                
+                addDebugInfo('Google 登入 URL: ' + googleAuthUrl);
+                
+                // 打開彈出視窗
+                const popup = window.open(
+                    googleAuthUrl,
+                    'googleLogin',
+                    'width=500,height=600,scrollbars=yes,resizable=yes'
+                );
+                
+                if (!popup) {
+                    addDebugInfo('✗ 彈出視窗被阻擋');
+                    return;
+                }
+                
+                addDebugInfo('✓ 彈出視窗已打開');
+            };
+        }
+    </script>
+    <script>
         // 內嵌配置
         window.__CONFIG__ = {
-            API_BASE: 'https://aistudentbackend.zeabur.app/api/v1',
+            API_BASE: 'https://aistudentbackend.zeabur.app',
             // 暫時使用測試模式，跳過後端驗證
             TEST_MODE: true
         };
+        
+        // LINE Login 配置
+        window.__LINE_CHANNEL_ID__ = '2008117059'; // 您的 LINE Channel ID
+        
+        // LINE 登入配置（您的 Channel 是 Messaging API 類型，使用標準 OAuth）
         
         // Google OAuth 配置
         window.__GOOGLE_CLIENT_ID__ = '300123710303-m4j1laa65p664n5vtrdkfvfa7b42c2o6.apps.googleusercontent.com';
@@ -35,8 +181,50 @@
                 -ms-user-select: none;
                 user-select: none;
             }
+        }
+        
+        /* iOS Safari 按鈕兼容性修復 */
+        button {
+            -webkit-appearance: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        
+        #back-to-setup {
+            min-width: 44px;
+            min-height: 44px;
+            z-index: 10;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            position: absolute !important;
+            left: 1rem !important;
+            top: 1rem !important;
+        }
+        
+        /* 確保按鈕在 iOS Safari 中可點擊 */
+        #back-to-setup::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            z-index: -1;
+        }
+        
+        /* 確保按鈕文字樣式正確 */
+        #back-to-setup span {
+            display: inline-block;
+            font-size: 14px;
+            font-weight: 500;
+        }
             
             .mobile-button {
+                pointer-events: auto !important;
+                -webkit-user-select: none;
+                user-select: none;
                 min-height: 44px !important; /* iOS 建議的最小觸控區域 */
                 padding: 12px 16px !important;
                 font-size: 16px !important;
@@ -63,6 +251,30 @@
                 height: calc(100vh - 120px) !important;
                 overflow-y: auto !important;
                 -webkit-overflow-scrolling: touch !important;
+            }
+            
+            /* AI 載入動畫 */
+            @keyframes ai-loading-bounce {
+                0%, 80%, 100% {
+                    transform: scale(0);
+                    opacity: 0.5;
+                }
+                40% {
+                    transform: scale(1);
+                    opacity: 1;
+                }
+            }
+            
+            .ai-loading-dot {
+                animation: ai-loading-bounce 1.4s infinite ease-in-out both;
+            }
+            
+            .ai-loading-dot:nth-child(1) {
+                animation-delay: -0.32s;
+            }
+            
+            .ai-loading-dot:nth-child(2) {
+                animation-delay: -0.16s;
             }
             
             .message-bubble {
@@ -163,7 +375,17 @@
                 <div id="user-info" class="hidden mb-4">
                     <img id="user-avatar" class="w-16 h-16 rounded-full mx-auto mb-2" src="" alt="User Avatar">
                     <p class="text-xl font-semibold">歡迎，<span id="user-name"></span>!</p>
-                    <button onclick="logout()" class="mt-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">登出</button>
+                    <div class="flex flex-col space-y-2 mt-4">
+                        <button onclick="continueToChat()" class="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium shadow-md">
+                            <span data-zh="繼續跟AI留學顧問諮詢" data-en="Continue with AI Study Advisor">繼續跟AI留學顧問諮詢</span>
+                        </button>
+                        <button onclick="openUserSettings()" class="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                            <span data-zh="用戶設定" data-en="User Settings">用戶設定</span>
+                        </button>
+                        <button onclick="logout()" class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
+                            <span data-zh="登出" data-en="Logout">登出</span>
+                        </button>
+                    </div>
                 </div>
                 <div id="login-buttons">
                     <p class="text-gray-700 mb-4" data-zh="請登入以繼續" data-en="Please login to continue">請登入以繼續</p>
@@ -178,7 +400,7 @@
                         <img src="https://img.icons8.com/color/24/000000/line-me.png" alt="LINE" class="w-5 h-5 mr-2">
                         <span data-zh="使用 LINE 登入" data-en="Login with LINE">使用 LINE 登入</span>
                     </button>
-                    <div class="text-xs text-gray-500 mt-2 text-center" data-zh="LINE 登入功能開發中，請先使用 Google 登入或跳過登入" data-en="LINE login is under development, please use Google login or skip login">LINE 登入功能開發中，請先使用 Google 登入或跳過登入</div>
+                    <div class="text-xs text-gray-500 mt-2 text-center" data-zh="支援 Google 和 LINE 登入" data-en="Support Google and LINE login">支援 Google 和 LINE 登入</div>
                 </div>
             </div>
 
@@ -384,19 +606,21 @@
     <!-- 聊天頁面 -->
     <div id="chat-page" class="min-h-screen hidden">
         <div class="max-w-4xl mx-auto bg-white min-h-screen flex flex-col">
-            <header class="bg-gradient-to-r from-yellow-400 to-yellow-300 text-gray-800 p-4 text-center relative">
-                <button id="back-to-setup" class="absolute left-4 top-4 text-gray-800 hover:text-gray-600 transition-colors">
-                    <span data-zh="← 重新設定" data-en="← Reset Settings">← 重新設定</span>
+            <header class="bg-gradient-to-r from-yellow-400 to-yellow-300 text-gray-800 p-4 relative">
+                <button id="back-to-setup" class="absolute left-4 top-4 text-gray-800 hover:text-gray-600 transition-colors" onclick="showLoginPage()" style="cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation;">
+                    <span data-zh="← 返回首頁" data-en="← Back to Home">← 返回首頁</span>
                 </button>
                 <button onclick="logout()" class="absolute right-4 top-4 text-gray-800 hover:text-gray-600 transition-colors">
                     <span data-zh="登出" data-en="Logout">登出</span>
                 </button>
-                <h1 class="text-xl font-bold" data-zh="AI 留學顧問" data-en="AI Study Abroad Advisor">AI 留學顧問</h1>
-                <p class="text-sm" data-zh="正在為您提供專業建議" data-en="Providing you with professional advice">正在為您提供專業建議</p>
-                <div class="flex items-center justify-center mt-2">
-                    <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                    <span class="text-sm" data-zh="在線" data-en="Online">在線</span>
-                </div>
+                <div class="text-center">
+                    <h1 class="text-xl font-bold" data-zh="AI 留學顧問" data-en="AI Study Abroad Advisor">AI 留學顧問</h1>
+                    <p class="text-sm" data-zh="正在為您提供專業建議" data-en="Providing you with professional advice">正在為您提供專業建議</p>
+                        <div class="flex items-center justify-center mt-2">
+                            <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                            <span class="text-sm" data-zh="在線" data-en="Online">在線</span>
+                        </div>
+                    </div>
             </header>
 
             <main class="flex-1 p-6 overflow-y-auto bg-white chat-container mobile-optimized" id="chat-container">
@@ -457,28 +681,593 @@
         </div>
     </div>
 
+    <!-- 用戶設定模態框 -->
+    <div id="user-settings-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden" onclick="closeUserSettingsOnOutside(event)">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900" data-zh="用戶設定" data-en="User Settings">用戶設定</h2>
+                    <button onclick="closeUserSettings()" class="text-gray-400 hover:text-gray-600 text-2xl">
+                        ×
+                    </button>
+                </div>
+                
+                <div class="space-y-6">
+                    <!-- 用戶資訊顯示 -->
+                    <div class="text-center">
+                        <img id="settings-user-avatar" class="w-20 h-20 rounded-full mx-auto mb-3" src="" alt="User Avatar">
+                        <h3 id="settings-user-name" class="text-xl font-semibold text-gray-900"></h3>
+                        <p id="settings-user-email" class="text-gray-600"></p>
+                    </div>
+                    
+                    <!-- 基本資訊編輯 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="顯示名稱" data-en="Display Name">顯示名稱</label>
+                        <input type="text" id="settings-display-name" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="偏好語言" data-en="Preferred Language">偏好語言</label>
+                        <select id="settings-language" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="zh">中文</option>
+                            <option value="en">English</option>
+                        </select>
+                    </div>
+                    
+                    <!-- 通知設定 -->
+                    <div>
+                        <h4 class="text-lg font-medium text-gray-900 mb-3" data-zh="通知設定" data-en="Notification Settings">通知設定</h4>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="settings-email-notifications" class="mr-2">
+                                <span data-zh="接收郵件通知" data-en="Receive email notifications">接收郵件通知</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="settings-push-notifications" class="mr-2">
+                                <span data-zh="接收推送通知" data-en="Receive push notifications">接收推送通知</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- 隱私設定 -->
+                    <div>
+                        <h4 class="text-lg font-medium text-gray-900 mb-3" data-zh="隱私設定" data-en="Privacy Settings">隱私設定</h4>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="settings-profile-public" class="mr-2">
+                                <span data-zh="公開個人資料" data-en="Make profile public">公開個人資料</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="settings-data-collection" class="mr-2">
+                                <span data-zh="允許數據收集以改善服務" data-en="Allow data collection to improve service">允許數據收集以改善服務</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 操作按鈕 -->
+                <div class="space-y-3 mt-8">
+                    <button onclick="editUserProfile()" class="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                        <span data-zh="編輯設定資料" data-en="Edit Profile Data">編輯設定資料</span>
+                    </button>
+                    <button onclick="queryStudentProgress()" id="query-progress-btn" class="w-full px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors hidden">
+                        <span data-zh="查詢學生諮詢進度" data-en="Query Student Progress">查詢學生諮詢進度</span>
+                    </button>
+                    <div class="flex space-x-3">
+                        <button onclick="saveUserSettings()" class="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                            <span data-zh="儲存設定" data-en="Save Settings">儲存設定</span>
+                        </button>
+                        <button onclick="closeUserSettings()" class="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                            <span data-zh="取消" data-en="Cancel">取消</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 編輯設定模態框 -->
+    <div id="edit-profile-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden" onclick="closeEditProfileOnOutside(event)">
+        <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900" data-zh="編輯留學需求設定" data-en="Edit Study Abroad Requirements">編輯留學需求設定</h2>
+                    <button onclick="closeEditProfile()" class="text-gray-400 hover:text-gray-600 text-2xl">
+                        ×
+                    </button>
+                </div>
+                
+                <!-- 編輯表單 -->
+                <form id="edit-profile-form" class="space-y-6">
+                    <!-- 個人基本資訊 -->
+                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                            <div class="flex items-center mb-2">
+                                <span class="w-6 h-6 bg-yellow-400 text-gray-800 rounded-full flex items-center justify-center text-sm mr-2">1</span>
+                                <span data-zh="個人基本資訊" data-en="Personal Information">個人基本資訊</span>
+                            </div>
+                        </h3>
+                        <div id="edit-student-fields" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="學生姓名 *" data-en="Student Name *">學生姓名 *</label>
+                                <input type="text" id="edit_student_name" name="student_name" required 
+                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                    data-zh-ph="例如：王小明" data-en-ph="e.g., David Wang" placeholder="例如：王小明">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="學生電子郵件 *" data-en="Student Email *">學生電子郵件 *</label>
+                                <input type="email" id="edit_student_email" name="student_email" required 
+                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                    data-zh-ph="例如：david@example.com" data-en-ph="e.g., david@example.com" placeholder="例如：david@example.com">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="國籍 *" data-en="Citizenship *">國籍 *</label>
+                                <input type="text" id="edit_citizenship" name="citizenship" required 
+                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                    data-zh-ph="例如：台灣" data-en-ph="e.g., Taiwan" placeholder="例如：台灣">
+                            </div>
+                        </div>
+                        <div id="edit-parent-fields" class="space-y-4 hidden">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="家長姓名 *" data-en="Parent Name *">家長姓名 *</label>
+                                <input type="text" id="edit_parent_name" name="parent_name"
+                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                    data-zh-ph="例如：王媽媽" data-en-ph="e.g., Alice Wang" placeholder="例如：王媽媽">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="家長電子郵件 *" data-en="Parent Email *">家長電子郵件 *</label>
+                                <input type="email" id="edit_parent_email" name="parent_email"
+                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                    data-zh-ph="例如：parent@example.com" data-en-ph="e.g., parent@example.com" placeholder="例如：parent@example.com">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="與學生關係 *" data-en="Relationship to Student *">與學生關係 *</label>
+                                <input type="text" id="edit_relationship" name="relationship"
+                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                    data-zh-ph="例如：母親 / 父親" data-en-ph="e.g., Mother / Father" placeholder="例如：母親">
+                            </div>
+                            <div class="border-t pt-4">
+                                <p class="text-sm text-gray-500 mb-2" data-zh="學生聯絡資料" data-en="Student Contact">學生聯絡資料</p>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="學生姓名 *" data-en="Student Name *">學生姓名 *</label>
+                                <input type="text" id="edit_child_name" name="child_name"
+                                    class="w-full p-3 mb-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                    data-zh-ph="例如：王小明" data-en-ph="e.g., David Wang" placeholder="例如：王小明">
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="學生電子郵件 *" data-en="Student Email *">學生電子郵件 *</label>
+                                <input type="email" id="edit_child_email" name="child_email"
+                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                    data-zh-ph="例如：david@example.com" data-en-ph="e.g., david@example.com" placeholder="例如：david@example.com">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 學術背景 -->
+                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                            <div class="flex items-center mb-2">
+                                <span class="w-6 h-6 bg-yellow-400 text-gray-800 rounded-full flex items-center justify-center text-sm mr-2">2</span>
+                                <span data-zh="學術背景" data-en="Academic Background">學術背景</span>
+                            </div>
+                        </h3>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="GPA (滿分4.0) *" data-en="GPA (out of 4.0) *">GPA (滿分4.0) *</label>
+                            <input type="number" id="edit_gpa" name="gpa" step="0.1" min="0" max="4" required 
+                                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                data-zh-ph="例如：3.8" data-en-ph="e.g., 3.8" placeholder="例如：3.8">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="目標學位 *" data-en="Target Degree *">目標學位 *</label>
+                            <select id="edit_degree" name="degree" required 
+                                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent">
+                                <option value="" data-zh="請選擇" data-en="Please select">請選擇</option>
+                                <option value="bachelor" data-zh="學士" data-en="Bachelor's">學士</option>
+                                <option value="master" data-zh="碩士" data-en="Master's">碩士</option>
+                                <option value="phd" data-zh="博士" data-en="PhD">博士</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="目標國家 *" data-en="Target Countries *">目標國家 *</label>
+                            <div class="flex flex-wrap gap-2">
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="edit_countries" value="us" class="mr-2">
+                                    <span data-zh="美國" data-en="USA">美國</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="edit_countries" value="uk" class="mr-2">
+                                    <span data-zh="英國" data-en="UK">英國</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="edit_countries" value="ca" class="mr-2">
+                                    <span data-zh="加拿大" data-en="Canada">加拿大</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 預算和時間 -->
+                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                            <div class="flex items-center mb-2">
+                                <span class="w-6 h-6 bg-yellow-400 text-gray-800 rounded-full flex items-center justify-center text-sm mr-2">3</span>
+                                <span data-zh="預算和時間" data-en="Budget and Time">預算和時間</span>
+                            </div>
+                        </h3>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="預算 (每年學費+生活費，單位：美元) *" data-en="Budget (Annual tuition + living expenses, USD) *">預算 (每年學費+生活費，單位：美元) *</label>
+                            <input type="number" id="edit_budget" name="budget" required 
+                                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                data-zh-ph="例如：50000" data-en-ph="e.g., 50000" placeholder="例如：50000">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="目標入學時間 *" data-en="Target Intake Time *">目標入學時間 *</label>
+                            <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                                <select id="edit_intake_semester" name="intake_semester" required 
+                                    class="w-full sm:w-1/3 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent">
+                                    <option value="" data-zh="選擇學期" data-en="Select Semester">選擇學期</option>
+                                    <option value="fall" data-zh="秋季" data-en="Fall">秋季</option>
+                                    <option value="spring" data-zh="春季" data-en="Spring">春季</option>
+                                    <option value="summer" data-zh="夏季" data-en="Summer">夏季</option>
+                                    <option value="winter" data-zh="冬季" data-en="Winter">冬季</option>
+                                </select>
+                                <select id="edit_intake_year" name="intake_year" required 
+                                    class="w-full sm:w-2/3 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent">
+                                    <option value="" data-zh="選擇年份" data-en="Select Year">選擇年份</option>
+                                </select>
+                            </div>
+                            <input type="hidden" id="edit_target_intake" name="target_intake">
+                        </div>
+                    </div>
+
+                    <!-- 角色選擇 -->
+                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                            <div class="flex items-center mb-2">
+                                <span class="w-6 h-6 bg-yellow-400 text-gray-800 rounded-full flex items-center justify-center text-sm mr-2">4</span>
+                                <span data-zh="選擇您的身份" data-en="Choose Your Role">選擇您的身份</span>
+                            </div>
+                        </h3>
+                        <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
+                            <button type="button" onclick="selectEditRole('student')" id="edit-role-student" 
+                                    class="flex-1 px-4 sm:px-6 py-3 bg-blue-500 text-white rounded-lg font-medium transition-colors text-sm sm:text-base">
+                                <span data-zh="👨‍🎓 我是學生" data-en="👨‍🎓 I am a Student">👨‍🎓 我是學生</span>
+                            </button>
+                            <button type="button" onclick="selectEditRole('parent')" id="edit-role-parent" 
+                                    class="flex-1 px-4 sm:px-6 py-3 bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors hover:bg-gray-400 text-sm sm:text-base">
+                                <span data-zh="👨‍👩‍👧‍👦 我是家長" data-en="👨‍👩‍👧‍👦 I am a Parent">👨‍👩‍👧‍👦 我是家長</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- 操作按鈕 -->
+                <div class="flex space-x-3 mt-8">
+                    <button onclick="saveEditedProfile()" class="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                        <span data-zh="儲存設定" data-en="Save Settings">儲存設定</span>
+                    </button>
+                    <button onclick="closeEditProfile()" class="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                        <span data-zh="取消" data-en="Cancel">取消</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 學生進度查詢模態框 -->
+    <div id="student-progress-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden" onclick="closeStudentProgressOnOutside(event)">
+        <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900" data-zh="學生諮詢進度報告" data-en="Student Progress Report">學生諮詢進度報告</h2>
+                    <button onclick="closeStudentProgress()" class="text-gray-400 hover:text-gray-600 text-2xl">
+                        ×
+                    </button>
+                </div>
+                
+                <div id="progress-content">
+                    <!-- 進度內容將在這裡動態載入 -->
+                </div>
+                
+                <!-- 關閉按鈕 -->
+                <div class="flex justify-end mt-6">
+                    <button onclick="closeStudentProgress()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                        <span data-zh="關閉" data-en="Close">關閉</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // 全局變量
         var currentRole = 'student';
         var currentLanguage = 'zh';
         var profileId = null;
+        var eventSource = null; // SSE 連線
+        
+        // 設置 JWT Cookie (安全版本，支持跨設備)
+        function setJWTCookie(jwt) {
+            // 檢查是否為 HTTPS 環境
+            const isSecure = window.location.protocol === 'https:';
+            const domain = window.location.hostname;
+            
+            // 構建安全的 Cookie 屬性
+            let cookieAttributes = [
+                `jwt=${jwt}`,
+                'path=/',
+                'max-age=86400', // 24小時
+                'SameSite=Lax', // 防止 CSRF
+                'HttpOnly=false' // 允許 JavaScript 訪問（SSE 需要）
+            ];
+            
+            // 設置域名以支持跨子域（如果適用）
+            if (domain.includes('zeabur.app')) {
+                cookieAttributes.push('domain=.zeabur.app');
+            }
+            
+            // 在 HTTPS 環境下啟用 Secure 屬性
+            if (isSecure) {
+                cookieAttributes.push('Secure');
+            }
+            
+            document.cookie = cookieAttributes.join('; ');
+            
+            console.log('JWT Cookie set with cross-device support:', {
+                secure: isSecure,
+                domain: domain.includes('zeabur.app') ? '.zeabur.app' : domain,
+                sameSite: 'Lax',
+                httpOnly: false,
+                maxAge: '86400s'
+            });
+        }
+        
+        // 清除 JWT Cookie (安全版本)
+        function clearJWTCookie() {
+            // 檢查是否為 HTTPS 環境
+            const isSecure = window.location.protocol === 'https:';
+            
+            // 構建清除 Cookie 的屬性
+            let clearAttributes = [
+                'jwt=',
+                'path=/',
+                'expires=Thu, 01 Jan 1970 00:00:00 GMT',
+                'SameSite=Lax'
+            ];
+            
+            // 在 HTTPS 環境下添加 Secure 屬性
+            if (isSecure) {
+                clearAttributes.push('Secure');
+            }
+            
+            document.cookie = clearAttributes.join('; ');
+            
+            console.log('JWT Cookie cleared with security attributes');
+        }
+        
+        // 關閉 SSE 連線
+        function closeStream() {
+            if (eventSource) {
+                console.log('Closing SSE connection...');
+                eventSource.close();
+                eventSource = null;
+            }
+        }
+        
+        // 開始 SSE 串流
+        function startStreaming(message, messageId) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const jwt = localStorage.getItem('jwt');
+                    if (!jwt) {
+                        reject(new Error('No JWT token'));
+                        return;
+                    }
+                    
+                    // 設置 Cookie
+                    setJWTCookie(jwt);
+                    
+                    // 關閉舊連線
+                    closeStream();
+                    
+                    // 創建新的 EventSource
+                    const streamUrl = window.__CONFIG__.API_BASE + '/api/v1/chat/stream';
+                    eventSource = new EventSource(streamUrl + '?message=' + encodeURIComponent(message) + 
+                                                 '&profile_id=' + encodeURIComponent(profileId || '') + 
+                                                 '&language=' + encodeURIComponent(currentLanguage) + 
+                                                 '&user_role=' + encodeURIComponent(currentRole));
+                    
+                    let fullResponse = '';
+                    let isComplete = false;
+                    
+                    eventSource.onmessage = function(event) {
+                        const data = event.data;
+                        
+                        // 忽略心跳
+                        if (data === ': keep-alive') {
+                            return;
+                        }
+                        
+                        // 檢查是否完成
+                        if (data === '[DONE]') {
+                            isComplete = true;
+                            closeStream();
+                            resolve(fullResponse);
+                            return;
+                        }
+                        
+                        // 累積回應內容
+                        fullResponse += data;
+                        
+                        // 更新訊息氣泡內容
+                        const messageElement = document.getElementById(messageId);
+                        if (messageElement) {
+                            const contentElement = messageElement.querySelector('.message-content');
+                            if (contentElement) {
+                                contentElement.textContent = fullResponse;
+                                // 自動滾動到底部
+                                const chatContainer = document.getElementById('chat-container');
+                                if (chatContainer) {
+                                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                                }
+                            }
+                        }
+                    };
+                    
+                    eventSource.onerror = function(error) {
+                        console.error('SSE error:', error);
+                        console.error('EventSource readyState:', eventSource.readyState);
+                        closeStream();
+                        if (!isComplete) {
+                            reject(new Error('SSE connection failed: ' + (error.message || 'Unknown error')));
+                        }
+                    };
+                    
+                    // 設置超時
+                    setTimeout(() => {
+                        if (!isComplete) {
+                            console.warn('SSE timeout, falling back to regular API');
+                            closeStream();
+                            reject(new Error('SSE timeout'));
+                        }
+                    }, 30000); // 30 秒超時
+                    
+                } catch (error) {
+                    console.error('Error starting stream:', error);
+                    closeStream();
+                    reject(error);
+                }
+            });
+        }
+        
+        // 從本地儲存載入 profileId
+        function loadProfileId() {
+            var jwt = localStorage.getItem('jwt');
+            var userProfile = localStorage.getItem('userProfile');
+            
+            if (jwt && userProfile && jwt !== 'fake-jwt-token-for-testing') {
+                try {
+                    var user = JSON.parse(userProfile);
+                    var savedProfileId = localStorage.getItem('profileId_' + user.userId);
+                    if (savedProfileId) {
+                        profileId = savedProfileId;
+                        console.log('Loaded profileId for user:', user.name, 'Profile ID:', profileId);
+                    }
+                } catch (e) {
+                    console.error('Error loading profileId:', e);
+                }
+            }
+        }
+        
+        // 儲存 profileId 到本地儲存
+        function saveProfileId(userId, profileIdValue) {
+            if (userId && profileIdValue) {
+                localStorage.setItem('profileId_' + userId, profileIdValue);
+                profileId = profileIdValue;
+                console.log('Saved profileId for user:', userId, 'Profile ID:', profileIdValue);
+            }
+        }
+        
+        // 檢索用戶設定資料
+        function fetchUserProfileData(profileId) {
+            return new Promise((resolve, reject) => {
+                var jwt = localStorage.getItem('jwt');
+                if (!jwt || !profileId) {
+                    console.error('Missing JWT or profileId:', { jwt: !!jwt, profileId: profileId });
+                    reject('No JWT token or profile ID');
+                    return;
+                }
+                
+                console.log('Fetching profile data for:', profileId);
+                
+                fetch(window.__CONFIG__.API_BASE + '/api/v1/user/profile/' + profileId, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + jwt,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => {
+                    console.log('Profile API response status:', response.status);
+                    return response.json();
+                })
+                .then(result => {
+                    console.log('Profile API result:', result);
+                    if (result.ok) {
+                        console.log('User profile data retrieved:', result.data);
+                        resolve(result.data);
+                    } else {
+                        console.error('Profile API error:', result.error);
+                        if (result.error === 'Profile not found') {
+                            reject('用戶還沒有填寫留學需求資料，請先填寫「設定您的留學需求」表單。');
+                        } else {
+                            reject('Failed to retrieve profile: ' + result.error);
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching user profile:', error);
+                    reject(error);
+                });
+            });
+        }
+
+        // 監聽彈出視窗消息
+        window.addEventListener('message', function(event) {
+            // 確保消息來自可信的來源
+            if (event.origin !== 'https://aistudentbackend.zeabur.app') {
+                return;
+            }
+            
+            if (event.data && event.data.type === 'GOOGLE_LOGIN_SUCCESS') {
+                console.log('Received login success message:', event.data);
+                
+                if (window.addDebugInfo) {
+                    addDebugInfo('✓ 收到 Google 登入成功消息');
+                    addDebugInfo('用戶: ' + event.data.user.name + ' (' + event.data.user.email + ')');
+                }
+                
+                // 儲存 token 和用戶信息
+                localStorage.setItem('jwt', event.data.token);
+                localStorage.setItem('userProfile', JSON.stringify(event.data.user));
+                
+                // 同時設置 Cookie 用於 SSE 認證
+                setJWTCookie(event.data.token);
+                
+                // 設置同步時間
+                localStorage.setItem('lastSyncTime', Date.now().toString());
+                
+                // 載入已保存的 profileId
+                loadProfileId();
+                
+                // 顯示用戶信息，不自動跳轉到設定頁面
+                showUserInfo(event.data.user);
+            }
+        });
 
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
             // 取得 Google Client ID 以初始化 GIS
-            fetch(window.__CONFIG__.API_BASE + '/auth/config')
+            fetch(window.__CONFIG__.API_BASE + '/api/v1/auth/config')
                 .then(r => r.json())
                 .then(cfg => {
-                    if (cfg && cfg.ok && cfg.googleClientId) {
-                        window.__GOOGLE_CLIENT_ID__ = cfg.googleClientId;
-                        console.log('Google Client ID loaded:', cfg.googleClientId);
+                    if (cfg && cfg.ok && cfg.google && cfg.google.client_id) {
+                        window.__GOOGLE_CLIENT_ID__ = cfg.google.client_id;
+                        console.log('Google Client ID loaded:', cfg.google.client_id);
                     } else {
-                        console.warn('Google Client ID not configured');
+                        console.warn('Google Client ID not configured in backend');
+                        console.log('Config response:', cfg);
                     }
                 })
                 .catch((error) => {
                     console.error('Failed to load Google Client ID:', error);
                 });
+                
+            // 檢查 Google API 載入狀態
+            setTimeout(function() {
+                if (typeof google !== 'undefined' && google.accounts) {
+                    console.log('Google API loaded successfully');
+                } else {
+                    console.error('Google API failed to load');
+                }
+            }, 2000);
             // 檢查登入狀態
             checkAuthStatus();
             
@@ -487,7 +1276,7 @@
             
             // 綁定事件
             document.getElementById('back-to-home').addEventListener('click', showLoginPage);
-            document.getElementById('back-to-setup').addEventListener('click', showSetupPage);
+            // back-to-setup 現在使用 onclick 屬性，更兼容 iOS Safari
             document.getElementById('setup-form').addEventListener('submit', handleSetupSubmit);
             document.getElementById('send-btn').addEventListener('click', sendMessage);
             document.getElementById('message-input').addEventListener('keypress', function(e) {
@@ -506,7 +1295,7 @@
         // 檢查認證狀態
         function checkAuthStatus() {
             try {
-                fetch(window.__CONFIG__.API_BASE + '/auth/status')
+                fetch(window.__CONFIG__.API_BASE + '/api/v1/auth/status')
                 .then(function(response) {
                     return response.json();
                 })
@@ -535,6 +1324,53 @@
             if (user.avatar) {
                 document.getElementById('user-avatar').src = user.avatar;
             }
+            
+            // 檢查用戶是否有設定資料
+            checkUserProfileStatus();
+        }
+        
+        // 檢查用戶設定狀態
+        function checkUserProfileStatus() {
+            var jwt = localStorage.getItem('jwt');
+            if (!jwt) return;
+            
+            fetch(window.__CONFIG__.API_BASE + '/api/v1/user/check-profile', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + jwt,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.ok) {
+                    if (result.has_profile) {
+                        // 已有設定資料
+                        profileId = result.profile_id;
+                        currentRole = result.user_role;
+                        
+                        // 儲存 profileId
+                        var userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+                        if (userProfile.userId) {
+                            saveProfileId(userProfile.userId, profileId);
+                        }
+                        
+                        // 更新按鈕文字
+                        var continueButton = document.querySelector('button[onclick="continueToChat()"]');
+                        if (continueButton) {
+                            continueButton.innerHTML = '<span data-zh="繼續跟AI留學顧問諮詢" data-en="Continue with AI Study Advisor">繼續跟AI留學顧問諮詢</span>';
+                        }
+                        
+                        console.log('User has existing profile:', result.profile_data);
+                    } else {
+                        // 第一次登入，沒有設定資料
+                        console.log('User is first time login, needs to complete setup');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error checking user profile:', error);
+            });
         }
 
         // 顯示登入按鈕
@@ -545,97 +1381,973 @@
 
         // 登入功能
         function loginWithGoogle() {
-            // 檢查是否在手機環境
-            var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            console.log('Google login button clicked');
+            if (window.addDebugInfo) {
+                addDebugInfo('Google 登入按鈕被點擊');
+            }
             
-            if (isMobile) {
-                // 手機環境：直接跳轉到 Google OAuth
-                var googleAuthUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' +
-                    'client_id=300123710303-m4j1laa65p664n5vtrdkfvfa7b42c2o6.apps.googleusercontent.com&' +
-                    'redirect_uri=https://aistudentbackend.zeabur.app/auth/google/callback&' +
-                    'response_type=code&' +
-                    'scope=openid email profile&' +
-                    'state=mobile_login';
+            // 檢查是否在應用程式內建瀏覽器中（但允許 LINE 內建瀏覽器）
+            var userAgent = navigator.userAgent || '';
+            var isInAppBrowser = /FBAN|FBAV|Instagram|WhatsApp|Twitter|LinkedInApp|Skype|Pinterest|Snapchat|WeChat|Telegram|Viber|Messenger|MicroMessenger|QQ|UCBrowser|Opera Mini|Opera Mobi/i.test(userAgent);
+            var isLineBrowser = /Line/i.test(userAgent);
+            
+            // 檢查是否為 iOS Safari（需要特殊處理）
+            var isIOSSafari = /iPad|iPhone|iPod/.test(userAgent) && /Safari/.test(userAgent) && !/CriOS|FxiOS|OPiOS|mercury/.test(userAgent);
+            
+            // 只對非 LINE 的內建瀏覽器進行限制
+            if (isInAppBrowser && !isLineBrowser) {
+                // 在應用程式內建瀏覽器中，提供更好的用戶體驗
+                var message = currentLanguage === 'en' ? 
+                    'To complete Google login, please:\n\n1. Tap the menu button (⋮) in the top right\n2. Select "Open in Browser" or "Open in Safari"\n3. Complete the login process' : 
+                    '為了完成 Google 登入，請：\n\n1. 點擊右上角的選單按鈕 (⋮)\n2. 選擇「在瀏覽器中開啟」或「在 Safari 中開啟」\n3. 完成登入流程';
                 
-                window.location.href = googleAuthUrl;
-                return;
-            }
-            
-            // 桌面環境：使用 Google API
-            if (!window.__GOOGLE_CLIENT_ID__) {
-                alert(currentLanguage === 'en' ? 
-                    'Google OAuth is not configured. Please use "Skip login" for now.' : 
-                    'Google OAuth 尚未配置。請先使用「跳過登入」功能。');
-                return;
-            }
-            
-            console.log('Attempting Google login with Client ID:', window.__GOOGLE_CLIENT_ID__);
-            
-            // 改用 one-tap 的 ID token API
-            google.accounts.id.initialize({
-                client_id: window.__GOOGLE_CLIENT_ID__,
-                callback: async (resp) => {
-                    try {
-                        var idToken = resp.credential;
-                        var r = await fetch(window.__CONFIG__.API_BASE + '/auth/google/verify', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ idToken })
-                        });
-                        var data = await r.json();
-                        if (data.ok && data.token) {
-                            localStorage.setItem('jwt', data.token);
-                            showUserInfo(data.user || { name: 'User' });
-                            showSetupPage();
-                        } else {
-                            alert(currentLanguage === 'en' ? 'Login failed.' : '登入失敗');
-                        }
-                    } catch (err) {
-                        alert(currentLanguage === 'en' ? 'Login failed.' : '登入失敗');
-                    }
+                // 使用 confirm 而不是 alert，提供更好的用戶體驗
+                var userChoice = confirm(message + '\n\n' + (currentLanguage === 'en' ? 'Click OK to continue with LINE login instead' : '點擊確定使用 LINE 登入'));
+                
+                if (userChoice) {
+                    // 用戶選擇使用 LINE 登入
+                    loginWithLINE();
                 }
-            });
+                
+                if (window.addDebugInfo) {
+                    addDebugInfo('✗ 檢測到應用程式內建瀏覽器，建議使用外部瀏覽器');
+                }
+                return;
+            }
             
-            // 改用直接跳轉方式（統一使用 OAuth 回調）
+            // LINE 內建瀏覽器允許直接進行 Google 登入
+            if (isLineBrowser) {
+                if (window.addDebugInfo) {
+                    addDebugInfo('✓ 檢測到 LINE 內建瀏覽器，允許 Google 登入');
+                }
+                
+                // 在 LINE 內建瀏覽器中，提供選擇
+                var lineMessage = currentLanguage === 'en' ? 
+                    'You are using LINE browser. You can:\n\n1. Continue with Google login (may not work)\n2. Use LINE login instead (recommended)\n3. Open in external browser' :
+                    '您正在使用 LINE 瀏覽器。您可以：\n\n1. 繼續使用 Google 登入（可能無法使用）\n2. 使用 LINE 登入（推薦）\n3. 在外部瀏覽器中開啟';
+                
+                var choice = confirm(lineMessage + '\n\n' + (currentLanguage === 'en' ? 'Click OK for LINE login, Cancel for Google login' : '點擊確定使用 LINE 登入，取消使用 Google 登入'));
+                
+                if (choice) {
+                    // 用戶選擇 LINE 登入
+                    loginWithLINE();
+                    return;
+                }
+                // 如果用戶選擇 Google 登入，繼續執行下面的代碼
+            }
+            
+            // 使用彈出視窗進行 Google 登入
             var googleAuthUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' +
-                'client_id=300123710303-m4j1laa65p664n5vtrdkfvfa7b42c2o6.apps.googleusercontent.com&' +
+                'client_id=' + (window.__GOOGLE_CLIENT_ID__ || '300123710303-m4j1laa65p664n5vtrdkfvfa7b42c2o6.apps.googleusercontent.com') + '&' +
                 'redirect_uri=https://aistudentbackend.zeabur.app/auth/google/callback&' +
                 'response_type=code&' +
                 'scope=openid email profile&' +
-                'state=desktop_login';
+                'state=popup_login';
             
-            window.location.href = googleAuthUrl;
+            console.log('Opening Google login popup:', googleAuthUrl);
+            
+            // 在 LINE 內建瀏覽器中，使用直接跳轉而不是彈出視窗
+            if (isLineBrowser) {
+                console.log('Using direct redirect for LINE browser');
+                window.location.href = googleAuthUrl;
+                return;
+            }
+            if (window.addDebugInfo) {
+                addDebugInfo('準備打開 Google 登入彈出視窗');
+                addDebugInfo('URL: ' + googleAuthUrl);
+            }
+            
+            // 打開彈出視窗
+            var popup = window.open(
+                googleAuthUrl,
+                'googleLogin',
+                'width=500,height=600,scrollbars=yes,resizable=yes,status=yes,location=yes,toolbar=no,menubar=no'
+            );
+            
+            if (!popup) {
+                const errorMsg = currentLanguage === 'en' ? 
+                    'Popup blocked. Please allow popups for this site and try again.' : 
+                    '彈出視窗被阻擋。請允許此網站的彈出視窗後再試。';
+                alert(errorMsg);
+                if (window.addDebugInfo) {
+                    addDebugInfo('✗ ' + errorMsg);
+                }
+                return;
+            }
+            
+            if (window.addDebugInfo) {
+                addDebugInfo('✓ 彈出視窗已成功打開');
+            }
+            
+            // 監聽彈出視窗的關閉
+            var checkClosed = setInterval(function() {
+                if (popup.closed) {
+                    clearInterval(checkClosed);
+                    console.log('Google login popup closed');
+                    // 登入成功會通過 postMessage 處理，這裡不需要額外處理
+                }
+            }, 1000);
+            
+            // 5分鐘後自動清理監聽器
+            setTimeout(function() {
+                clearInterval(checkClosed);
+                if (!popup.closed) {
+                    popup.close();
+                }
+            }, 300000);
         }
 
+        function showLineUnavailable() {
+            alert(currentLanguage === 'en' ? 
+                'LINE login feature is coming soon! Please use Google login or skip login for now.' : 
+                'LINE 登入功能即將推出！目前請使用 Google 登入或跳過登入。');
+        }
+        
         function loginWithLINE() {
-            // 獲取 LINE Login URL
-            fetch('https://aistudentbackend.zeabur.app/api/v1/auth/line/login')
+            console.log('LINE login button clicked');
+            
+            // 檢查是否在 LINE 內建瀏覽器中
+            var userAgent = navigator.userAgent || '';
+            var isLineBrowser = /Line/i.test(userAgent);
+            
+            if (isLineBrowser) {
+                console.log('Detected LINE in-app browser');
+                
+                // 在 LINE 內建瀏覽器中，提供更好的用戶體驗提示
+                var message = currentLanguage === 'en' ? 
+                    'You are using LINE browser. This will open LINE authorization page.\n\n' +
+                    'If you see QR code, you can:\n' +
+                    '1. Use "Login via email account" button below\n' +
+                    '2. Or use your LINE app to scan QR code\n\n' +
+                    'Continue with LINE login?' :
+                    '您正在使用 LINE 瀏覽器。這將開啟 LINE 授權頁面。\n\n' +
+                    '如果看到 QR code，您可以：\n' +
+                    '1. 使用下方的「透過電子郵件帳號登入」按鈕\n' +
+                    '2. 或使用 LINE App 掃描 QR code\n\n' +
+                    '繼續使用 LINE 登入？';
+                
+                if (confirm(message)) {
+                    // 使用後端 API 獲取 LINE 登入 URL
+                    fetch('https://aistudentbackend.zeabur.app/api/v1/auth/line/login')
+                        .then(function(response) {
+                            return response.json();
+                        })
+                        .then(function(data) {
+                            if (data.ok) {
+                                console.log('Redirecting to LINE login:', data.login_url);
+                                window.location.href = data.login_url;
+                            } else {
+                                alert(currentLanguage === 'en' ? 
+                                    'LINE login is not available. Please use Google login or skip login.' : 
+                                    'LINE 登入功能暫時無法使用，請使用 Google 登入或跳過登入。');
+                            }
+                        })
+                        .catch(function(error) {
+                            console.error('LINE Login error:', error);
+                            alert(currentLanguage === 'en' ? 
+                                'LINE login failed. Please try again or use Google login.' : 
+                                'LINE 登入失敗，請重試或使用 Google 登入。');
+                        });
+                }
+            } else {
+                // 在外部瀏覽器中，直接使用 LINE 登入
+                fetch('https://aistudentbackend.zeabur.app/api/v1/auth/line/login')
+                    .then(function(response) {
+                        return response.json();
+                    })
+                    .then(function(data) {
+                        if (data.ok) {
+                            window.location.href = data.login_url;
+                        } else {
+                            alert(currentLanguage === 'en' ? 
+                                'LINE login is not available. Please use Google login or skip login.' : 
+                                'LINE 登入功能暫時無法使用，請使用 Google 登入或跳過登入。');
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('LINE Login error:', error);
+                        alert(currentLanguage === 'en' ? 
+                            'LINE login failed. Please try again or use Google login.' : 
+                            'LINE 登入失敗，請重試或使用 Google 登入。');
+                    });
+            }
+        }
+        
+        // 繼續到聊天對話框
+        function continueToChat() {
+            const jwt = localStorage.getItem('jwt');
+            if (!jwt) {
+                alert(currentLanguage === 'en' ? 'Please login first.' : '請先登入。');
+                return;
+            }
+            
+            // 檢查用戶是否有留學需求資料
+            fetch(window.__CONFIG__.API_BASE + '/api/v1/user/check-profile', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + jwt,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.ok) {
+                    if (result.has_profile) {
+                        // 已有留學需求資料，直接進入聊天
+                        console.log('User has profile, going to chat');
+                        showChatPage();
+                    } else {
+                        // 沒有留學需求資料，跳轉到設定頁面
+                        console.log('User has no profile, going to setup');
+                        showSetupPage();
+                    }
+                } else {
+                    console.error('Error checking user profile:', result.error);
+                    // 出錯時，如果有本地 profileId 就直接聊天，否則跳轉設定
+                    if (profileId) {
+                        showChatPage();
+                    } else {
+                        showSetupPage();
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error checking user profile:', error);
+                // 出錯時，如果有本地 profileId 就直接聊天，否則跳轉設定
+                if (profileId) {
+                    showChatPage();
+                } else {
+                    showSetupPage();
+                }
+            });
+        }
+        
+        // 編輯用戶設定
+        function editUserProfile() {
+            console.log('editUserProfile called, profileId:', profileId);
+            
+            if (!profileId) {
+                console.error('No profileId available');
+                alert(currentLanguage === 'en' ? 
+                    'No profile found. Please complete the setup first.' : 
+                    '找不到設定資料。請先完成設定。');
+                return;
+            }
+            
+            console.log('Attempting to fetch profile data for:', profileId);
+            
+            // 獲取用戶資料並預填編輯表單
+            fetchUserProfileData(profileId)
+                .then(profileData => {
+                    console.log('Profile data fetched successfully:', profileData);
+                    // 預填編輯表單資料
+                    prefillEditForm(profileData);
+                    
+                    // 顯示編輯模態框
+                    document.getElementById('edit-profile-modal').classList.remove('hidden');
+                })
+                .catch(error => {
+                    console.error('Error loading profile data:', error);
+                    alert(currentLanguage === 'en' ? 
+                        'Failed to load profile data: ' + error : 
+                        '載入設定資料失敗：' + error);
+                });
+        }
+        
+        // 預填編輯表單
+        function prefillEditForm(profileData) {
+            // 設定角色
+            if (profileData.user_role) {
+                selectEditRole(profileData.user_role);
+            }
+            
+            // 預填學生資料
+            if (profileData.student_name) {
+                document.getElementById('edit_student_name').value = profileData.student_name;
+            }
+            if (profileData.student_email) {
+                document.getElementById('edit_student_email').value = profileData.student_email;
+            }
+            if (profileData.citizenship) {
+                document.getElementById('edit_citizenship').value = profileData.citizenship;
+            }
+            
+            // 預填家長資料
+            if (profileData.parent_name) {
+                document.getElementById('edit_parent_name').value = profileData.parent_name;
+            }
+            if (profileData.parent_email) {
+                document.getElementById('edit_parent_email').value = profileData.parent_email;
+            }
+            if (profileData.relationship) {
+                document.getElementById('edit_relationship').value = profileData.relationship;
+            }
+            if (profileData.child_name) {
+                document.getElementById('edit_child_name').value = profileData.child_name;
+            }
+            if (profileData.child_email) {
+                document.getElementById('edit_child_email').value = profileData.child_email;
+            }
+            
+            // 預填學術背景
+            if (profileData.gpa) {
+                document.getElementById('edit_gpa').value = profileData.gpa;
+            }
+            if (profileData.degree) {
+                document.getElementById('edit_degree').value = profileData.degree;
+            }
+            
+            // 預填國家選擇
+            if (profileData.countries) {
+                var countries = typeof profileData.countries === 'string' ? 
+                    JSON.parse(profileData.countries) : profileData.countries;
+                countries.forEach(country => {
+                    var checkbox = document.querySelector(`input[name="edit_countries"][value="${country}"]`);
+                    if (checkbox) {
+                        checkbox.checked = true;
+                    }
+                });
+            }
+            
+            // 預填預算和時間
+            if (profileData.budget) {
+                document.getElementById('edit_budget').value = profileData.budget;
+            }
+            if (profileData.target_intake) {
+                var intakeParts = profileData.target_intake.split(' ');
+                if (intakeParts.length >= 2) {
+                    document.getElementById('edit_intake_semester').value = intakeParts[0];
+                    document.getElementById('edit_intake_year').value = intakeParts[1];
+                }
+            }
+            
+            console.log('Edit form prefilled with profile data:', profileData);
+        }
+        
+        // 編輯角色選擇
+        function selectEditRole(role) {
+            document.getElementById('edit-role-student').classList.toggle('bg-blue-500', role === 'student');
+            document.getElementById('edit-role-student').classList.toggle('bg-gray-300', role !== 'student');
+            document.getElementById('edit-role-parent').classList.toggle('bg-blue-500', role === 'parent');
+            document.getElementById('edit-role-parent').classList.toggle('bg-gray-300', role !== 'parent');
+
+            // 切換欄位顯示
+            document.getElementById('edit-student-fields').classList.toggle('hidden', role !== 'student');
+            document.getElementById('edit-parent-fields').classList.toggle('hidden', role !== 'parent');
+        }
+        
+        // 儲存編輯的設定
+        function saveEditedProfile() {
+            var form = document.getElementById('edit-profile-form');
+            var formData = new FormData(form);
+            var data = {};
+            
+            // 獲取選中的角色
+            var selectedRole = document.getElementById('edit-role-student').classList.contains('bg-blue-500') ? 'student' : 'parent';
+            
+            if (selectedRole === 'student') {
+                data = {
+                    student_name: formData.get('student_name'),
+                    student_email: formData.get('student_email'),
+                    citizenship: formData.get('citizenship'),
+                    gpa: parseFloat(formData.get('gpa')),
+                    degree: formData.get('degree'),
+                    countries: getCheckedEditCountries(),
+                    budget: parseInt(formData.get('budget')),
+                    target_intake: formData.get('target_intake'),
+                    user_role: selectedRole
+                };
+            } else {
+                data = {
+                    parent_name: formData.get('parent_name'),
+                    parent_email: formData.get('parent_email'),
+                    relationship: formData.get('relationship'),
+                    child_name: formData.get('child_name'),
+                    child_email: formData.get('child_email'),
+                    gpa: parseFloat(formData.get('gpa')),
+                    degree: formData.get('degree'),
+                    countries: getCheckedEditCountries(),
+                    budget: parseInt(formData.get('budget')),
+                    target_intake: formData.get('target_intake'),
+                    user_role: selectedRole
+                };
+            }
+
+            try {
+                var jwt = localStorage.getItem('jwt');
+                if (!jwt) {
+                    alert(currentLanguage === 'en' ? 'Please login first.' : '請先登入。');
+                    return;
+                }
+                
+                var authHeader = { 'Authorization': 'Bearer ' + jwt };
+                var headers = {
+                    'Content-Type': 'application/json'
+                };
+                for (var key in authHeader) {
+                    headers[key] = authHeader[key];
+                }
+                
+                // 發送更新請求到後端
+                fetch(window.__CONFIG__.API_BASE + '/api/v1/user/update-profile/' + profileId, {
+                    method: 'PUT',
+                    headers: headers,
+                    body: JSON.stringify(data)
+                })
                 .then(function(response) {
                     return response.json();
                 })
-                .then(function(data) {
-                    if (data.ok) {
-                        // 重定向到 LINE Login
-                        window.location.href = data.login_url;
-                    } else {
+                .then(function(result) {
+                    if (result.ok) {
                         alert(currentLanguage === 'en' ? 
-                            'LINE login is not available. Please use Google login or skip login.' : 
-                            'LINE 登入功能暫時無法使用，請使用 Google 登入或跳過登入。');
+                            'Profile updated successfully!' : 
+                            '設定已成功更新！');
+                        closeEditProfile();
+                    } else {
+                        alert('更新失敗：' + result.error);
                     }
                 })
                 .catch(function(error) {
-                    console.error('LINE Login error:', error);
-                    alert(currentLanguage === 'en' ? 
-                        'LINE login failed. Please try again or use Google login.' : 
-                        'LINE 登入失敗，請重試或使用 Google 登入。');
+                    console.error('Profile update failed:', error);
+                    alert('更新失敗，請檢查網路連接');
                 });
+            } catch (error) {
+                console.error('Profile update failed:', error);
+                alert('更新失敗，請檢查網路連接');
+            }
+        }
+        
+        // 獲取編輯表單中選中的國家
+        function getCheckedEditCountries() {
+            var countries = [];
+            var checkboxes = document.querySelectorAll('input[name="edit_countries"]:checked');
+            for (var i = 0; i < checkboxes.length; i++) {
+                countries.push(checkboxes[i].value);
+            }
+            return countries;
+        }
+        
+        // 關閉編輯設定模態框
+        function closeEditProfile() {
+            document.getElementById('edit-profile-modal').classList.add('hidden');
+        }
+        
+        // 點擊模態框外部關閉編輯設定
+        function closeEditProfileOnOutside(event) {
+            if (event.target === event.currentTarget) {
+                closeEditProfile();
+            }
+        }
+        
+        // 查詢學生進度
+        function queryStudentProgress() {
+            const jwt = localStorage.getItem('jwt');
+            if (!jwt) {
+                alert(currentLanguage === 'en' ? 'Please login first.' : '請先登入。');
+                return;
+            }
+            
+            // 顯示載入狀態
+            document.getElementById('progress-content').innerHTML = 
+                '<div class="text-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div><p class="mt-2">載入中...</p></div>';
+            
+            // 顯示模態框
+            document.getElementById('student-progress-modal').classList.remove('hidden');
+            
+            fetch(window.__CONFIG__.API_BASE + '/api/v1/parent/student-progress', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + jwt,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.ok) {
+                    displayStudentProgress(result.data);
+                } else {
+                    document.getElementById('progress-content').innerHTML = 
+                        '<div class="text-center py-8 text-red-500">查詢失敗：' + result.error + '</div>';
+                }
+            })
+            .catch(error => {
+                console.error('Error querying student progress:', error);
+                document.getElementById('progress-content').innerHTML = 
+                    '<div class="text-center py-8 text-red-500">查詢失敗，請檢查網路連接</div>';
+            });
+        }
+        
+        // 顯示學生進度
+        function displayStudentProgress(data) {
+            const content = document.getElementById('progress-content');
+            
+            if (!data.student_found) {
+                content.innerHTML = `
+                    <div class="text-center py-8">
+                        <div class="text-gray-500 mb-4">📚</div>
+                        <h3 class="text-lg font-semibold mb-2">未找到學生資料</h3>
+                        <p class="text-gray-600">${data.message}</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const student = data.student_info;
+            const stats = data.activity_stats;
+            const progress = data.progress_analysis;
+            
+            // 進度等級顏色
+            const progressColors = {
+                'beginner': 'bg-yellow-100 text-yellow-800',
+                'intermediate': 'bg-blue-100 text-blue-800',
+                'advanced': 'bg-green-100 text-green-800'
+            };
+            
+            // 活躍度顏色
+            const activityColors = {
+                'low': 'bg-red-100 text-red-800',
+                'medium': 'bg-yellow-100 text-yellow-800',
+                'high': 'bg-green-100 text-green-800'
+            };
+            
+            content.innerHTML = `
+                <!-- 學生基本資訊 -->
+                <div class="bg-gray-50 p-4 rounded-lg mb-6">
+                    <h3 class="text-lg font-semibold mb-3">👨‍🎓 學生資訊</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-600">姓名</p>
+                            <p class="font-medium">${student.name}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">電子郵件</p>
+                            <p class="font-medium">${student.email}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">註冊時間</p>
+                            <p class="font-medium">${new Date(student.profile_created).toLocaleDateString()}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">最後更新</p>
+                            <p class="font-medium">${new Date(student.last_updated).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 活動統計 -->
+                <div class="bg-blue-50 p-4 rounded-lg mb-6">
+                    <h3 class="text-lg font-semibold mb-3">📊 活動統計</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="text-center">
+                            <p class="text-2xl font-bold text-blue-600">${stats.total_messages}</p>
+                            <p class="text-sm text-gray-600">總訊息數</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-2xl font-bold text-green-600">${stats.active_days}</p>
+                            <p class="text-sm text-gray-600">活躍天數</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-2xl font-bold text-purple-600">${progress.engagement_score}</p>
+                            <p class="text-sm text-gray-600">參與度評分</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 進度分析 -->
+                <div class="bg-green-50 p-4 rounded-lg mb-6">
+                    <h3 class="text-lg font-semibold mb-3">📈 進度分析</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <p class="text-sm text-gray-600 mb-1">進度等級</p>
+                            <span class="px-3 py-1 rounded-full text-sm font-medium ${progressColors[progress.progress_level]}">
+                                ${progress.progress_level === 'beginner' ? '初學者' : 
+                                  progress.progress_level === 'intermediate' ? '中級' : '高級'}
+                            </span>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600 mb-1">活躍度</p>
+                            <span class="px-3 py-1 rounded-full text-sm font-medium ${activityColors[progress.activity_level]}">
+                                ${progress.activity_level === 'low' ? '低' : 
+                                  progress.activity_level === 'medium' ? '中等' : '高'}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- 建議 -->
+                    <div>
+                        <p class="text-sm text-gray-600 mb-2">💡 建議</p>
+                        <ul class="space-y-1">
+                            ${progress.suggestions.map(suggestion => `<li class="text-sm">• ${suggestion}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- 最近話題 -->
+                ${data.recent_topics.length > 0 ? `
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <h3 class="text-lg font-semibold mb-3">💬 最近諮詢話題</h3>
+                    <div class="space-y-3">
+                        ${data.recent_topics.slice(0, 3).map(topic => `
+                            <div class="bg-white p-3 rounded border">
+                                <p class="text-sm text-gray-700 mb-1">${topic.content}</p>
+                                <p class="text-xs text-gray-500">${new Date(topic.time).toLocaleString()}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+            `;
+        }
+        
+        // 關閉學生進度模態框
+        function closeStudentProgress() {
+            document.getElementById('student-progress-modal').classList.add('hidden');
+        }
+        
+        // 點擊模態框外部關閉學生進度
+        function closeStudentProgressOnOutside(event) {
+            if (event.target === event.currentTarget) {
+                closeStudentProgress();
+            }
+        }
+        
+        // 根據用戶角色顯示相應按鈕
+        function showRoleSpecificButtons() {
+            const queryProgressBtn = document.getElementById('query-progress-btn');
+            
+            // 檢查用戶是否為家長
+            if (currentRole === 'parent') {
+                queryProgressBtn.classList.remove('hidden');
+            } else {
+                queryProgressBtn.classList.add('hidden');
+            }
+        }
+        
+        // 預填設定表單
+        function prefillSetupForm(profileData) {
+            // 設定角色
+            if (profileData.user_role) {
+                selectRole(profileData.user_role);
+            }
+            
+            // 預填學生資料
+            if (profileData.student_name) {
+                document.getElementById('student_name').value = profileData.student_name;
+            }
+            if (profileData.student_email) {
+                document.getElementById('student_email').value = profileData.student_email;
+            }
+            if (profileData.citizenship) {
+                document.getElementById('citizenship').value = profileData.citizenship;
+            }
+            
+            // 預填家長資料
+            if (profileData.parent_name) {
+                document.getElementById('parent_name').value = profileData.parent_name;
+            }
+            if (profileData.parent_email) {
+                document.getElementById('parent_email').value = profileData.parent_email;
+            }
+            if (profileData.relationship) {
+                document.getElementById('relationship').value = profileData.relationship;
+            }
+            if (profileData.child_name) {
+                document.getElementById('child_name').value = profileData.child_name;
+            }
+            if (profileData.child_email) {
+                document.getElementById('child_email').value = profileData.child_email;
+            }
+            
+            // 預填學術背景
+            if (profileData.gpa) {
+                document.getElementById('gpa').value = profileData.gpa;
+            }
+            if (profileData.degree) {
+                document.getElementById('degree').value = profileData.degree;
+            }
+            
+            // 預填國家選擇
+            if (profileData.countries) {
+                var countries = typeof profileData.countries === 'string' ? 
+                    JSON.parse(profileData.countries) : profileData.countries;
+                countries.forEach(country => {
+                    var checkbox = document.querySelector(`input[value="${country}"]`);
+                    if (checkbox) {
+                        checkbox.checked = true;
+                    }
+                });
+            }
+            
+            // 預填預算和時間
+            if (profileData.budget) {
+                document.getElementById('budget').value = profileData.budget;
+            }
+            if (profileData.target_intake) {
+                var intakeParts = profileData.target_intake.split(' ');
+                if (intakeParts.length >= 2) {
+                    document.getElementById('intake_semester').value = intakeParts[0];
+                    document.getElementById('intake_year').value = intakeParts[1];
+                }
+            }
+            
+            console.log('Form prefilled with profile data:', profileData);
+        }
+        
+        // 開啟用戶設定頁面
+        function openUserSettings() {
+            // 顯示用戶設定模態框
+            document.getElementById('user-settings-modal').classList.remove('hidden');
+            loadUserSettings();
+        }
+        
+        // 載入用戶設定
+        function loadUserSettings() {
+            const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+            const jwt = localStorage.getItem('jwt');
+            
+            if (!jwt || !userProfile) {
+                alert(currentLanguage === 'en' ? 
+                    'Please login first.' : 
+                    '請先登入。');
+                return;
+            }
+            
+            // 載入用戶基本資訊
+            document.getElementById('settings-user-avatar').src = userProfile.avatar || 'https://via.placeholder.com/80';
+            document.getElementById('settings-user-name').textContent = userProfile.name || 'Unknown User';
+            document.getElementById('settings-user-email').textContent = userProfile.email || '';
+            
+            // 載入設定值
+            document.getElementById('settings-display-name').value = userProfile.name || '';
+            document.getElementById('settings-language').value = currentLanguage;
+            
+            // 從後端載入通知設定
+            loadNotificationSettings();
+            
+            // 嘗試載入用戶的留學需求資料
+            loadUserProfileData();
+            
+            // 根據用戶角色顯示相應按鈕
+            showRoleSpecificButtons();
+        }
+        
+        // 載入用戶的留學需求資料
+        function loadUserProfileData() {
+            const jwt = localStorage.getItem('jwt');
+            if (!jwt) return;
+            
+            const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+            
+            // 如果有 profileId，直接載入
+            if (profileId) {
+                fetchUserProfileData(profileId)
+                    .then(profileData => {
+                        console.log('Profile data loaded successfully:', profileData);
+                        // 可以在這裡更新 UI 顯示用戶的留學需求資料
+                    })
+                    .catch(error => {
+                        console.error('Error loading profile data:', error);
+                        showProfileDataMessage(error);
+                    });
+            } else {
+                // 如果沒有 profileId，嘗試從後端獲取用戶的所有 profile
+                fetch(window.__CONFIG__.API_BASE + '/api/v1/user/check-profile', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + jwt,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.ok && result.has_profile && result.profile_id) {
+                        // 更新 profileId 並載入資料
+                        profileId = result.profile_id;
+                        if (userProfile.userId) {
+                            localStorage.setItem('profileId_' + userProfile.userId, profileId);
+                        }
+                        
+                        fetchUserProfileData(profileId)
+                            .then(profileData => {
+                                console.log('Profile data loaded successfully:', profileData);
+                            })
+                            .catch(error => {
+                                console.error('Error loading profile data:', error);
+                                showProfileDataMessage(error);
+                            });
+                    } else {
+                        console.log('User has no profile data yet');
+                        // 顯示提示用戶填寫留學需求的訊息
+                        showProfileDataMessage('您還沒有填寫留學需求資料，請先填寫「設定您的留學需求」表單。');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking user profile:', error);
+                });
+            }
+        }
+        
+        // 顯示用戶資料訊息
+        function showProfileDataMessage(message) {
+            // 在用戶設定模態框中顯示訊息
+            const settingsModal = document.getElementById('user-settings-modal');
+            if (settingsModal) {
+                // 創建或更新訊息顯示區域
+                let messageDiv = document.getElementById('profile-data-message');
+                if (!messageDiv) {
+                    messageDiv = document.createElement('div');
+                    messageDiv.id = 'profile-data-message';
+                    messageDiv.className = 'bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4';
+                    
+                    // 插入到用戶設定模態框的內容區域
+                    const settingsContent = settingsModal.querySelector('.bg-white');
+                    if (settingsContent) {
+                        settingsContent.insertBefore(messageDiv, settingsContent.firstChild);
+                    }
+                }
+                
+                messageDiv.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-yellow-800">${message}</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        // 從後端載入通知設定
+        function loadNotificationSettings() {
+            const jwt = localStorage.getItem('jwt');
+            if (!jwt) return;
+            
+            fetch(window.__CONFIG__.API_BASE + '/api/v1/user/notification-settings', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + jwt,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.ok && result.data) {
+                    document.getElementById('settings-email-notifications').checked = result.data.email_notifications;
+                    document.getElementById('settings-push-notifications').checked = result.data.push_notifications;
+                    
+                    // 設定通知頻率（如果有的話）
+                    const frequencySelect = document.getElementById('settings-notification-frequency');
+                    if (frequencySelect) {
+                        frequencySelect.value = result.data.notification_frequency || 'daily';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error loading notification settings:', error);
+                // 使用預設值
+                document.getElementById('settings-email-notifications').checked = false;
+                document.getElementById('settings-push-notifications').checked = true;
+            });
+        }
+        
+        // 儲存用戶設定
+        function saveUserSettings() {
+            const jwt = localStorage.getItem('jwt');
+            if (!jwt) {
+                alert(currentLanguage === 'en' ? 'Please login first.' : '請先登入。');
+                return;
+            }
+            
+            const settings = {
+                displayName: document.getElementById('settings-display-name').value,
+                language: document.getElementById('settings-language').value,
+                emailNotifications: document.getElementById('settings-email-notifications').checked,
+                pushNotifications: document.getElementById('settings-push-notifications').checked,
+                profilePublic: document.getElementById('settings-profile-public').checked,
+                dataCollection: document.getElementById('settings-data-collection').checked,
+                updatedAt: new Date().toISOString()
+            };
+            
+            // 儲存通知設定到後端
+            const notificationSettings = {
+                email_notifications: settings.emailNotifications,
+                push_notifications: settings.pushNotifications,
+                notification_frequency: 'daily' // 預設值
+            };
+            
+            fetch(window.__CONFIG__.API_BASE + '/api/v1/user/notification-settings', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + jwt,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(notificationSettings)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.ok) {
+                    console.log('Notification settings saved to backend');
+                } else {
+                    console.error('Failed to save notification settings:', result.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error saving notification settings:', error);
+            });
+            
+            // 儲存到本地儲存
+            localStorage.setItem('userSettings', JSON.stringify(settings));
+            
+            // 更新用戶資料
+            const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+            userProfile.name = settings.displayName;
+            localStorage.setItem('userProfile', JSON.stringify(userProfile));
+            
+            // 更新語言設定
+            if (settings.language !== currentLanguage) {
+                currentLanguage = settings.language;
+                switchLanguage(currentLanguage);
+            }
+            
+            // 更新顯示的用戶名稱
+            document.getElementById('user-name').textContent = settings.displayName;
+            
+            // 顯示成功訊息
+            alert(currentLanguage === 'en' ? 
+                'Settings saved successfully!' : 
+                '設定已成功儲存！');
+            
+            // 關閉設定模態框
+            closeUserSettings();
+        }
+        
+        // 關閉用戶設定
+        function closeUserSettings() {
+            document.getElementById('user-settings-modal').classList.add('hidden');
+        }
+        
+        // 點擊模態框外部關閉
+        function closeUserSettingsOnOutside(event) {
+            if (event.target === event.currentTarget) {
+                closeUserSettings();
+            }
         }
         
         // 登出功能
         function logout() {
+            // 關閉 SSE 連線
+            closeStream();
+            
             // 清除本地儲存
             localStorage.removeItem('jwt');
             localStorage.removeItem('userProfile');
+            
+            // 清除 Cookie
+            clearJWTCookie();
             
             // 顯示登出成功訊息
             alert(currentLanguage === 'en' ? 
@@ -652,7 +2364,21 @@
             // 創建一個假的 JWT token 用於測試
             var fakeToken = 'fake-jwt-token-for-testing';
             localStorage.setItem('jwt', fakeToken);
-            showSetupPage();
+            
+            // 同時設置 Cookie 用於 SSE 認證
+            setJWTCookie(fakeToken);
+            
+            // 創建一個假的用戶資料
+            var fakeUser = {
+                userId: 'test-user',
+                email: 'test@example.com',
+                name: '測試用戶',
+                avatar: 'https://via.placeholder.com/80'
+            };
+            localStorage.setItem('userProfile', JSON.stringify(fakeUser));
+            
+            // 直接進入聊天，不需要設定頁面
+            showChatPage();
         }
 
 
@@ -756,9 +2482,41 @@
 
         // 頁面切換
         function showLoginPage() {
-            document.getElementById('login-page').classList.remove('hidden');
-            document.getElementById('setup-page').classList.add('hidden');
-            document.getElementById('chat-page').classList.add('hidden');
+            try {
+                console.log('Showing login page...');
+                
+                // 強制隱藏所有頁面（兼容所有瀏覽器）
+                var pages = ['setup-page', 'chat-page', 'user-info-page'];
+                pages.forEach(function(pageId) {
+                    var page = document.getElementById(pageId);
+                    if (page) {
+                        page.style.display = 'none';
+                        page.classList.add('hidden');
+                    }
+                });
+                
+                // 顯示登入頁面
+                var loginPage = document.getElementById('login-page');
+                if (loginPage) {
+                    loginPage.style.display = 'block';
+                    loginPage.classList.remove('hidden');
+                }
+                
+                // 確保頁面滾動到頂部（兼容所有瀏覽器）
+                if (window.scrollTo) {
+                    window.scrollTo(0, 0);
+                } else if (document.documentElement.scrollTop !== undefined) {
+                    document.documentElement.scrollTop = 0;
+                } else if (document.body.scrollTop !== undefined) {
+                    document.body.scrollTop = 0;
+                }
+                
+                console.log('Login page shown successfully');
+            } catch (error) {
+                console.error('Error showing login page:', error);
+                // 降級處理：直接重新載入頁面
+                window.location.reload();
+            }
         }
 
         function validateToken(token) {
@@ -777,13 +2535,24 @@
                     throw new Error('Token expired');
                 }
                 
-                // Token 有效，顯示設定頁面
-                showSetupPage();
+                // Token 有效，檢查是否有用戶資料並顯示用戶資訊
+                var userProfile = localStorage.getItem('userProfile');
+                if (userProfile) {
+                    try {
+                        var user = JSON.parse(userProfile);
+                        showUserInfo(user);
+                    } catch (e) {
+                        console.error('Error parsing user profile:', e);
+                        showLoginButtons();
+                    }
+                } else {
+                    showLoginButtons();
+                }
             } catch (error) {
                 console.log('Token validation failed:', error);
                 // Token 無效，清除並顯示登入頁面
                 localStorage.removeItem('jwt');
-                showLoginPage();
+                showLoginButtons();
             }
         }
 
@@ -794,16 +2563,52 @@
         }
 
         function showChatPage() {
-            document.getElementById('login-page').classList.add('hidden');
-            document.getElementById('setup-page').classList.add('hidden');
-            document.getElementById('chat-page').classList.remove('hidden');
-            
-            // 更新聊天頁面的語言
-            switchLanguage(currentLanguage);
-            
-            loadQuickActions();
-            // 自動發送打招呼訊息
-            sendWelcomeMessage();
+            try {
+                // 強制隱藏所有頁面（兼容所有瀏覽器）
+                var pages = ['login-page', 'setup-page', 'user-info-page'];
+                pages.forEach(function(pageId) {
+                    var page = document.getElementById(pageId);
+                    if (page) {
+                        page.style.display = 'none';
+                        page.classList.add('hidden');
+                    }
+                });
+                
+                // 顯示聊天頁面
+                var chatPage = document.getElementById('chat-page');
+                if (chatPage) {
+                    chatPage.style.display = 'block';
+                    chatPage.classList.remove('hidden');
+                }
+                
+                // 確保頁面滾動到頂部（兼容所有瀏覽器）
+                if (window.scrollTo) {
+                    window.scrollTo(0, 0);
+                } else if (document.documentElement.scrollTop !== undefined) {
+                    document.documentElement.scrollTop = 0;
+                } else if (document.body.scrollTop !== undefined) {
+                    document.body.scrollTop = 0;
+                }
+                
+                // 更新聊天頁面的語言
+                if (typeof switchLanguage === 'function') {
+                    switchLanguage(currentLanguage);
+                }
+                
+                if (typeof loadQuickActions === 'function') {
+                    loadQuickActions();
+                }
+                
+                // 先載入對話歷史，然後決定是否發送歡迎訊息
+                if (typeof loadChatHistory === 'function') {
+                    loadChatHistory();
+                }
+                
+                console.log('Chat page shown successfully');
+            } catch (error) {
+                console.error('Error showing chat page:', error);
+                alert('頁面切換失敗，請刷新頁面重試');
+            }
         }
 
         // 處理設定提交
@@ -857,7 +2662,7 @@
                     headers[key] = authHeader[key];
                 }
                 
-                fetch(window.__CONFIG__.API_BASE + '/intake', {
+                fetch(window.__CONFIG__.API_BASE + '/api/v1/intake', {
                     method: 'POST',
                     headers: headers,
                     body: JSON.stringify(data)
@@ -866,16 +2671,29 @@
                     return response.json();
                 })
                 .then(function(result) {
+                    console.log('Setup submission result:', result);
                     if (result.ok) {
                         profileId = result.data.profile_id;
-                        showChatPage();
+                        console.log('Profile ID received:', profileId);
+                        
+                        // 儲存 profileId 到本地儲存
+                        var userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+                        if (userProfile.userId) {
+                            saveProfileId(userProfile.userId, profileId);
+                        }
+                        
+                        // 添加延遲確保 DOM 更新完成
+                        setTimeout(function() {
+                            showChatPage();
+                        }, 100);
                     } else {
-                        alert('提交失敗：' + result.error);
+                        console.error('Setup submission failed:', result.error);
+                        alert('提交失敗：' + (result.error || '未知錯誤'));
                     }
                 })
                 .catch(function(error) {
                     console.error('Setup submission failed:', error);
-                    alert('提交失敗，請檢查網路連接');
+                    alert('提交失敗，請檢查網路連接：' + error.message);
                 });
             } catch (error) {
                 console.error('Setup submission failed:', error);
@@ -900,58 +2718,195 @@
             
             if (!message) return;
 
+            // 禁用發送按鈕
+            var sendBtn = document.getElementById('send-btn');
+            sendBtn.disabled = true;
+            sendBtn.textContent = '發送中...';
+
             // 添加用戶消息到聊天
-            addMessage(message, 'user');
+            var userMessageId = addMessage(message, 'user');
             input.value = '';
 
-            try {
-                var authHeader = {};
-                var jwt = localStorage.getItem('jwt');
-                if (jwt) {
-                    authHeader['Authorization'] = 'Bearer ' + jwt;
-                }
-                
-                var headers = {
-                    'Content-Type': 'application/json'
-                };
-                for (var key in authHeader) {
-                    headers[key] = authHeader[key];
-                }
-                
-                fetch(window.__CONFIG__.API_BASE + '/chat', {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify({
+            // 顯示 AI 載入動畫
+            showAILoading();
+
+            // 檢查是否有 profileId，如果沒有則使用空值
+            console.log('Sending message with profileId:', profileId);
+
+            // 創建 AI 回應訊息氣泡（空內容）
+            var aiMessageId = addMessage('', 'ai', false);
+
+            // 嘗試使用 SSE 串流
+            startStreaming(message, aiMessageId)
+                .then(function(fullResponse) {
+                    console.log('SSE stream completed successfully');
+                    hideAILoading();
+                    
+                    // 重新啟用發送按鈕
+                    sendBtn.disabled = false;
+                    sendBtn.textContent = currentLanguage === 'en' ? 'Send' : '發送';
+                })
+                .catch(function(error) {
+                    console.warn('SSE failed, falling back to regular API:', error);
+                    hideAILoading();
+                    
+                    // Fallback 到原本的 POST API
+                    fallbackToRegularAPI(message, aiMessageId)
+                        .finally(function() {
+                            // 重新啟用發送按鈕
+                            sendBtn.disabled = false;
+                            sendBtn.textContent = currentLanguage === 'en' ? 'Send' : '發送';
+                        });
+                });
+        }
+        
+        // Fallback 到原本的 POST API
+        function fallbackToRegularAPI(message, aiMessageId) {
+            return new Promise(function(resolve, reject) {
+                try {
+                    var authHeader = {};
+                    var jwt = localStorage.getItem('jwt');
+                    if (jwt) {
+                        authHeader['Authorization'] = 'Bearer ' + jwt;
+                    }
+                    
+                    var headers = {
+                        'Content-Type': 'application/json'
+                    };
+                    for (var key in authHeader) {
+                        headers[key] = authHeader[key];
+                    }
+                    
+                    console.log('Fallback: Sending chat request with:', {
                         profile_id: profileId,
                         message: message,
                         user_role: currentRole,
                         language: currentLanguage
+                    });
+                    
+                    fetch(window.__CONFIG__.API_BASE + '/api/v1/chat', {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify({
+                            profile_id: profileId,
+                            message: message,
+                            user_role: currentRole,
+                            language: currentLanguage
+                        })
                     })
-                })
-                .then(function(response) {
-                    return response.json();
-                })
-                .then(function(result) {
-                    if (result.ok) {
-                        addMessage(result.data.response, 'ai');
-                    } else {
-                        addMessage('抱歉，我無法處理您的請求。請稍後再試。', 'ai');
+                    .then(function(response) {
+                        return response.json();
+                    })
+                    .then(function(result) {
+                        console.log('Fallback chat response:', result);
+                        
+                        if (result.ok && result.reply) {
+                            // 更新 AI 回應內容
+                            var messageElement = document.getElementById(aiMessageId);
+                            if (messageElement) {
+                                var contentElement = messageElement.querySelector('.message-content');
+                                if (contentElement) {
+                                    contentElement.textContent = result.reply;
+                                }
+                            }
+                            resolve(result.reply);
+                        } else {
+                            console.error('Invalid fallback response:', result);
+                            var errorMsg = '抱歉，我無法處理您的請求。請稍後再試。';
+                            var messageElement = document.getElementById(aiMessageId);
+                            if (messageElement) {
+                                var contentElement = messageElement.querySelector('.message-content');
+                                if (contentElement) {
+                                    contentElement.textContent = errorMsg;
+                                }
+                            }
+                            reject(new Error('Invalid response'));
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('Fallback chat failed:', error);
+                        var errorMsg = '抱歉，網路連接出現問題。請檢查您的網路連接。';
+                        var messageElement = document.getElementById(aiMessageId);
+                        if (messageElement) {
+                            var contentElement = messageElement.querySelector('.message-content');
+                            if (contentElement) {
+                                contentElement.textContent = errorMsg;
+                            }
+                        }
+                        reject(error);
+                    });
+                } catch (error) {
+                    console.error('Fallback chat failed:', error);
+                    var errorMsg = '抱歉，網路連接出現問題。請檢查您的網路連接。';
+                    var messageElement = document.getElementById(aiMessageId);
+                    if (messageElement) {
+                        var contentElement = messageElement.querySelector('.message-content');
+                        if (contentElement) {
+                            contentElement.textContent = errorMsg;
+                        }
                     }
-                })
-                .catch(function(error) {
-                    console.error('Chat failed:', error);
-                    addMessage('抱歉，網路連接出現問題。請檢查您的網路連接。', 'ai');
-                });
-            } catch (error) {
-                console.error('Chat failed:', error);
-                addMessage('抱歉，網路連接出現問題。請檢查您的網路連接。', 'ai');
-            }
+                    reject(error);
+                }
+            });
         }
 
+        // 顯示 AI 載入動畫
+        function showAILoading() {
+            var chatContainer = document.getElementById('chat-container');
+            var loadingWrapper = document.createElement('div');
+            loadingWrapper.id = 'ai-loading-message';
+            loadingWrapper.className = 'mb-4';
+            
+            var currentTime = new Date().toLocaleTimeString('zh-TW', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            var aiTitle = currentLanguage === 'en' ? 'AI Study Abroad Advisor' : 'AI 留學顧問';
+            var aiSubtitle = currentLanguage === 'en' ? 'Your Exclusive Study Abroad Planning Expert' : '您的專屬留學規劃專家';
+            
+            loadingWrapper.innerHTML = 
+                '<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">' +
+                    '<div class="flex items-center mb-4">' +
+                        '<div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">AI</div>' +
+                        '<div>' +
+                            '<h3 class="font-semibold text-gray-800">' + aiTitle + '</h3>' +
+                            '<p class="text-sm text-gray-500">' + aiSubtitle + '</p>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="flex items-center text-gray-600">' +
+                        '<div class="flex space-x-1 mr-3">' +
+                            '<div class="w-2 h-2 bg-blue-500 rounded-full ai-loading-dot"></div>' +
+                            '<div class="w-2 h-2 bg-blue-500 rounded-full ai-loading-dot"></div>' +
+                            '<div class="w-2 h-2 bg-blue-500 rounded-full ai-loading-dot"></div>' +
+                        '</div>' +
+                        '<span class="text-sm">' + (currentLanguage === 'en' ? 'AI is thinking...' : 'AI 正在思考中...') + '</span>' +
+                    '</div>' +
+                    '<div class="text-xs text-gray-400 mt-3">' + currentTime + '</div>' +
+                '</div>';
+            
+            chatContainer.appendChild(loadingWrapper);
+            
+            // 滾動到底部
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        // 隱藏 AI 載入動畫
+        function hideAILoading() {
+            var loadingMessage = document.getElementById('ai-loading-message');
+            if (loadingMessage) {
+                loadingMessage.remove();
+            }
+        }
+        
         // 添加消息到聊天
-        function addMessage(message, sender) {
+        function addMessage(message, sender, shouldScroll = true) {
             var chatContainer = document.getElementById('chat-container');
             var messageWrapper = document.createElement('div');
+            
+            // 生成唯一的 messageId
+            var messageId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            messageWrapper.id = messageId;
             
             var currentTime = new Date().toLocaleTimeString('zh-TW', { 
                 hour: '2-digit', 
@@ -979,28 +2934,123 @@
                                 '<p class="text-sm text-gray-500">' + aiSubtitle + '</p>' +
                             '</div>' +
                         '</div>' +
-                        '<div class="text-gray-700 leading-relaxed">' + message + '</div>' +
+                        '<div class="message-content text-gray-700 leading-relaxed whitespace-pre-line">' + message + '</div>' +
                         '<div class="text-xs text-gray-400 mt-3">' + currentTime + '</div>' +
                     '</div>';
             }
             
             chatContainer.appendChild(messageWrapper);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            if (shouldScroll) {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+            
+            // 保存對話歷史到 localStorage
+            saveChatHistory();
+            
+            // 返回 messageId
+            return messageId;
+        }
+
+        // 保存對話歷史
+        function saveChatHistory() {
+            if (!profileId) return;
+            
+            try {
+                var messages = [];
+                var chatContainer = document.getElementById('chat-container');
+                var messageElements = chatContainer.children;
+                
+                for (var i = 0; i < messageElements.length; i++) {
+                    var element = messageElements[i];
+                    var messageText = '';
+                    var messageType = '';
+                    
+                    if (element.classList.contains('justify-end')) {
+                        // 用戶訊息
+                        var userMessage = element.querySelector('.text-sm');
+                        if (userMessage) {
+                            messageText = userMessage.textContent;
+                            messageType = 'user';
+                        }
+                    } else {
+                        // AI 訊息
+                        var aiMessage = element.querySelector('.text-gray-700');
+                        if (aiMessage) {
+                            messageText = aiMessage.textContent;
+                            messageType = 'ai';
+                        }
+                    }
+                    
+                    if (messageText && messageType) {
+                        messages.push({
+                            content: messageText,
+                            type: messageType,
+                            timestamp: new Date().toISOString()
+                        });
+                    }
+                }
+                
+                // 限制歷史記錄數量（最多 50 條）
+                if (messages.length > 50) {
+                    messages = messages.slice(-50);
+                }
+                
+                localStorage.setItem('chatHistory_' + profileId, JSON.stringify(messages));
+            } catch (error) {
+                console.error('Error saving chat history:', error);
+            }
+        }
+
+        // 載入對話歷史
+        function loadChatHistory() {
+            if (!profileId) {
+                // 沒有 profileId，直接發送歡迎訊息
+                sendWelcomeMessage();
+                return;
+            }
+            
+            // 從 localStorage 載入對話歷史
+            var chatHistory = localStorage.getItem('chatHistory_' + profileId);
+            if (chatHistory) {
+                try {
+                    var messages = JSON.parse(chatHistory);
+                    // 清空現有訊息
+                    var chatContainer = document.getElementById('chat-messages');
+                    chatContainer.innerHTML = '';
+                    
+                    // 載入歷史訊息
+                    messages.forEach(function(msg) {
+                        addMessage(msg.content, msg.type, false); // false = 不滾動到底部
+                    });
+                    
+                    // 最後滾動到底部
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                    
+                    console.log('Chat history loaded:', messages.length, 'messages');
+                } catch (error) {
+                    console.error('Error loading chat history:', error);
+                    sendWelcomeMessage();
+                }
+            } else {
+                // 沒有歷史記錄，發送歡迎訊息
+                sendWelcomeMessage();
+            }
         }
 
         // 發送歡迎訊息
         function sendWelcomeMessage() {
             if (!profileId) return;
             
-            // 立即顯示歡迎訊息，不等待 API 回應
-            var welcomeText = '';
-            if (currentLanguage === 'en') {
-                welcomeText = '🎓 Hello! I am your AI Study Abroad Advisor.\n\nI have reviewed your basic information, now let\'s dive deep into your study abroad planning!\n\nYou can ask me any questions about studying abroad, such as:\n\n• School and major recommendations\n• Application timeline planning\n• Scholarship opportunities\n• Visa and accommodation guidance\n\nWhat would you like to know first?';
-            } else {
-                welcomeText = '🎓 您好！我是您的AI留學顧問。\n\n我已經了解了您的基本資訊，現在讓我們深入討論您的留學計劃吧！\n\n您可以問我任何關於留學的問題，比如：\n\n• 推薦適合的學校和專業\n• 申請時間規劃\n• 獎學金申請建議\n• 簽證與住宿資訊\n\n您想先了解哪個部分呢？';
+            // 檢查是否已有對話歷史
+            var existingMessages = document.querySelectorAll('.message.ai');
+            if (existingMessages.length > 0) {
+                console.log('Chat history exists, skipping welcome message');
+                return;
             }
             
-            addMessage(welcomeText, 'ai');
+            // 顯示 AI 載入動畫
+            showAILoading();
             
             // 同時發送 API 請求獲取更詳細的回覆
             try {
@@ -1017,7 +3067,7 @@
                     headers[key] = authHeader[key];
                 }
                 
-                fetch(window.__CONFIG__.API_BASE + '/chat', {
+                fetch(window.__CONFIG__.API_BASE + '/api/v1/chat', {
                     method: 'POST',
                     headers: headers,
                     body: JSON.stringify({
@@ -1031,17 +3081,31 @@
                     return response.json();
                 })
                 .then(function(result) {
-                    if (result.ok) {
-                        addMessage(result.data.response, 'ai');
+                    // 隱藏載入動畫
+                    hideAILoading();
+                    
+                    if (result.ok && result.reply) {
+                        addMessage(result.reply, 'ai');
                     } else {
                         console.error('Welcome message failed:', result);
+                        // 如果 API 失敗，顯示預設歡迎訊息
+                        var welcomeText = currentLanguage === 'en' ? 
+                            '🎓 Hello! I am your AI Study Abroad Advisor. How can I help you today?' :
+                            '🎓 您好！我是您的AI留學顧問。今天有什麼可以為您服務的嗎？';
+                        addMessage(welcomeText, 'ai');
                     }
                 })
                 .catch(function(error) {
                     console.error('Welcome message error:', error);
+                    
+                    // 隱藏載入動畫
+                    hideAILoading();
                 });
             } catch (error) {
                 console.error('Welcome message error:', error);
+                
+                // 隱藏載入動畫
+                hideAILoading();
             }
         }
 
@@ -1090,10 +3154,96 @@
         }
         
         // 頁面載入時檢查登入狀態
+        // 跨設備同步檢查
+        function checkCrossDeviceSync() {
+            const jwt = localStorage.getItem('jwt');
+            if (!jwt) return;
+            
+            // 檢查是否有來自其他設備的更新
+            const lastSyncTime = localStorage.getItem('lastSyncTime') || 0;
+            const currentTime = Date.now();
+            
+            // 如果超過 5 分鐘沒有同步，則檢查更新
+            if (currentTime - lastSyncTime > 5 * 60 * 1000) {
+                syncUserData();
+            }
+        }
+        
+        // 同步用戶資料
+        function syncUserData() {
+            const jwt = localStorage.getItem('jwt');
+            if (!jwt) return;
+            
+            fetch(window.__CONFIG__.API_BASE + '/api/v1/user/sync', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + jwt,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.ok && data.data && data.data.user) {
+                    // 更新本地用戶資料
+                    localStorage.setItem('userProfile', JSON.stringify(data.data.user));
+                    localStorage.setItem('lastSyncTime', Date.now().toString());
+                    
+                    console.log('User data synced across devices');
+                    
+                    // 如果有新的 profileId，更新它
+                    if (data.data.profileId && data.data.profileId !== profileId) {
+                        profileId = data.data.profileId;
+                        localStorage.setItem('profileId', profileId);
+                        console.log('Profile ID updated from sync:', profileId);
+                    }
+                }
+            })
+            .catch(error => {
+                console.log('Sync failed (this is normal if no server sync endpoint):', error);
+                // 不拋出錯誤，避免影響頁面功能
+            });
+        }
+        
         window.onload = function() {
-            // 清除可能無效的舊 token（用於測試）
-            // 取消註解下面這行來強制顯示登入頁面
-            localStorage.removeItem('jwt');
+            // 檢查是否已登入
+            var existingJWT = localStorage.getItem('jwt');
+            var existingUserProfile = localStorage.getItem('userProfile');
+            
+            // 如果已經登入，顯示用戶資訊
+            if (existingJWT && existingUserProfile && existingJWT !== 'fake-jwt-token-for-testing') {
+                try {
+                    var userProfile = JSON.parse(existingUserProfile);
+                    
+                    // 載入已保存的 profileId
+                    loadProfileId();
+                    
+                    showUserInfo(userProfile);
+                    console.log('User already logged in:', userProfile.name);
+                    
+                    // 檢查跨設備同步（安全調用）
+                    try {
+                        checkCrossDeviceSync();
+                    } catch (e) {
+                        console.log('Cross-device sync check failed:', e);
+                    }
+                } catch (e) {
+                    console.error('Error parsing user profile:', e);
+                    localStorage.removeItem('userProfile');
+                }
+            }
+        };
+        
+        // 頁面離開時關閉 SSE 連線
+        window.addEventListener('beforeunload', function() {
+            closeStream();
+        });
+        
+        // 頁面隱藏時關閉 SSE 連線
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                closeStream();
+            }
+        });
             
             // 檢查 URL 參數中的 token
             var urlParams = new URLSearchParams(window.location.search);
@@ -1125,11 +3275,27 @@
             }
             
             if (token) {
-                // 儲存 token 並跳轉到設定頁面
+                // 儲存 token
                 localStorage.setItem('jwt', token);
-                showSetupPage();
+                
+                // 同時設置 Cookie 用於 SSE 認證
+                setJWTCookie(token);
+                
+                // 如果有 provider 參數，表示是 LINE 登入，需要獲取用戶資訊
+                var provider = urlParams.get('provider');
+                if (provider === 'line') {
+                    // LINE 登入成功，但需要獲取用戶資訊
+                    // 暫時顯示登入成功訊息，實際應用中可能需要額外的 API 調用
+                    alert(currentLanguage === 'en' ? 
+                        'LINE login successful! Please refresh the page to continue.' : 
+                        'LINE 登入成功！請重新整理頁面以繼續。');
+                }
+                
                 // 清除 URL 參數
                 window.history.replaceState({}, document.title, window.location.pathname);
+                
+                // 重新載入頁面以顯示正確的狀態
+                window.location.reload();
             } else {
                 // 檢查本地儲存的 token
                 var storedToken = localStorage.getItem('jwt');
@@ -1144,3 +3310,4 @@
     </script>
 </body>
 </html>
+
