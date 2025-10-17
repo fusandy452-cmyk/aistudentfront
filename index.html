@@ -1053,15 +1053,21 @@
                             const contentElement = messageElement.querySelector('.message-content');
                             if (contentElement) {
                                 contentElement.textContent = fullResponse;
+                                // 自動滾動到底部
+                                const chatContainer = document.getElementById('chat-container');
+                                if (chatContainer) {
+                                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                                }
                             }
                         }
                     };
                     
                     eventSource.onerror = function(error) {
                         console.error('SSE error:', error);
+                        console.error('EventSource readyState:', eventSource.readyState);
                         closeStream();
                         if (!isComplete) {
-                            reject(new Error('SSE connection failed'));
+                            reject(new Error('SSE connection failed: ' + (error.message || 'Unknown error')));
                         }
                     };
                     
@@ -1172,6 +1178,9 @@
                 // 儲存 token 和用戶信息
                 localStorage.setItem('jwt', event.data.token);
                 localStorage.setItem('userProfile', JSON.stringify(event.data.user));
+                
+                // 同時設置 Cookie 用於 SSE 認證
+                setJWTCookie(event.data.token);
                 
                 // 載入已保存的 profileId
                 loadProfileId();
@@ -2278,9 +2287,15 @@
         
         // 登出功能
         function logout() {
+            // 關閉 SSE 連線
+            closeStream();
+            
             // 清除本地儲存
             localStorage.removeItem('jwt');
             localStorage.removeItem('userProfile');
+            
+            // 清除 Cookie
+            clearJWTCookie();
             
             // 顯示登出成功訊息
             alert(currentLanguage === 'en' ? 
@@ -2297,6 +2312,9 @@
             // 創建一個假的 JWT token 用於測試
             var fakeToken = 'fake-jwt-token-for-testing';
             localStorage.setItem('jwt', fakeToken);
+            
+            // 同時設置 Cookie 用於 SSE 認證
+            setJWTCookie(fakeToken);
             
             // 創建一個假的用戶資料
             var fakeUser = {
@@ -3150,6 +3168,9 @@
             if (token) {
                 // 儲存 token
                 localStorage.setItem('jwt', token);
+                
+                // 同時設置 Cookie 用於 SSE 認證
+                setJWTCookie(token);
                 
                 // 如果有 provider 參數，表示是 LINE 登入，需要獲取用戶資訊
                 var provider = urlParams.get('provider');
