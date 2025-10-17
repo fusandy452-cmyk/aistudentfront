@@ -983,14 +983,63 @@
         var profileId = null;
         var eventSource = null; // SSE 連線
         
-        // 設置 JWT Cookie
+        // 設置 JWT Cookie (安全版本，支持跨設備)
         function setJWTCookie(jwt) {
-            document.cookie = `jwt=${jwt}; path=/; max-age=86400; SameSite=Lax`;
+            // 檢查是否為 HTTPS 環境
+            const isSecure = window.location.protocol === 'https:';
+            const domain = window.location.hostname;
+            
+            // 構建安全的 Cookie 屬性
+            let cookieAttributes = [
+                `jwt=${jwt}`,
+                'path=/',
+                'max-age=86400', // 24小時
+                'SameSite=Lax', // 防止 CSRF
+                'HttpOnly=false' // 允許 JavaScript 訪問（SSE 需要）
+            ];
+            
+            // 設置域名以支持跨子域（如果適用）
+            if (domain.includes('zeabur.app')) {
+                cookieAttributes.push('domain=.zeabur.app');
+            }
+            
+            // 在 HTTPS 環境下啟用 Secure 屬性
+            if (isSecure) {
+                cookieAttributes.push('Secure');
+            }
+            
+            document.cookie = cookieAttributes.join('; ');
+            
+            console.log('JWT Cookie set with cross-device support:', {
+                secure: isSecure,
+                domain: domain.includes('zeabur.app') ? '.zeabur.app' : domain,
+                sameSite: 'Lax',
+                httpOnly: false,
+                maxAge: '86400s'
+            });
         }
         
-        // 清除 JWT Cookie
+        // 清除 JWT Cookie (安全版本)
         function clearJWTCookie() {
-            document.cookie = 'jwt=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+            // 檢查是否為 HTTPS 環境
+            const isSecure = window.location.protocol === 'https:';
+            
+            // 構建清除 Cookie 的屬性
+            let clearAttributes = [
+                'jwt=',
+                'path=/',
+                'expires=Thu, 01 Jan 1970 00:00:00 GMT',
+                'SameSite=Lax'
+            ];
+            
+            // 在 HTTPS 環境下添加 Secure 屬性
+            if (isSecure) {
+                clearAttributes.push('Secure');
+            }
+            
+            document.cookie = clearAttributes.join('; ');
+            
+            console.log('JWT Cookie cleared with security attributes');
         }
         
         // 關閉 SSE 連線
@@ -1181,6 +1230,9 @@
                 
                 // 同時設置 Cookie 用於 SSE 認證
                 setJWTCookie(event.data.token);
+                
+                // 設置同步時間
+                localStorage.setItem('lastSyncTime', Date.now().toString());
                 
                 // 載入已保存的 profileId
                 loadProfileId();
@@ -3102,6 +3154,55 @@
         }
         
         // 頁面載入時檢查登入狀態
+        // 跨設備同步檢查
+        function checkCrossDeviceSync() {
+            const jwt = localStorage.getItem('jwt');
+            if (!jwt) return;
+            
+            // 檢查是否有來自其他設備的更新
+            const lastSyncTime = localStorage.getItem('lastSyncTime') || 0;
+            const currentTime = Date.now();
+            
+            // 如果超過 5 分鐘沒有同步，則檢查更新
+            if (currentTime - lastSyncTime > 5 * 60 * 1000) {
+                syncUserData();
+            }
+        }
+        
+        // 同步用戶資料
+        function syncUserData() {
+            const jwt = localStorage.getItem('jwt');
+            if (!jwt) return;
+            
+            fetch(window.__CONFIG__.API_BASE + '/api/v1/user/sync', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + jwt,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.ok && data.user) {
+                    // 更新本地用戶資料
+                    localStorage.setItem('userProfile', JSON.stringify(data.user));
+                    localStorage.setItem('lastSyncTime', Date.now().toString());
+                    
+                    console.log('User data synced across devices');
+                    
+                    // 如果有新的 profileId，更新它
+                    if (data.profileId && data.profileId !== profileId) {
+                        profileId = data.profileId;
+                        localStorage.setItem('profileId', profileId);
+                        console.log('Profile ID updated from sync:', profileId);
+                    }
+                }
+            })
+            .catch(error => {
+                console.log('Sync failed (this is normal if no server sync endpoint):', error);
+            });
+        }
+        
         window.onload = function() {
             // 檢查是否已登入
             var existingJWT = localStorage.getItem('jwt');
@@ -3117,6 +3218,9 @@
                     
                     showUserInfo(userProfile);
                     console.log('User already logged in:', userProfile.name);
+                    
+                    // 檢查跨設備同步
+                    checkCrossDeviceSync();
                 } catch (e) {
                     console.error('Error parsing user profile:', e);
                     localStorage.removeItem('userProfile');
