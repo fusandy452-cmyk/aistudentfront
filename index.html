@@ -249,7 +249,10 @@
                 <div class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-8 rounded-2xl border border-blue-200 mb-8 shadow-lg">
                     <div class="flex items-center mb-6">
                         <div class="relative">
-                            <img id="user-info-avatar" class="w-20 h-20 rounded-full mr-6 border-4 border-white shadow-md object-cover" src="" alt="User Avatar" onerror="this.src='https://via.placeholder.com/80x80/4F46E5/FFFFFF?text=👤'">
+                            <img id="user-info-avatar" class="w-20 h-20 rounded-full mr-6 border-4 border-white shadow-md object-cover" src="" alt="User Avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <div id="default-avatar" class="w-20 h-20 rounded-full mr-6 border-4 border-white shadow-md bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold hidden">
+                                👤
+                            </div>
                             <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-2 border-white rounded-full flex items-center justify-center">
                                 <div class="w-2 h-2 bg-white rounded-full"></div>
                             </div>
@@ -895,7 +898,7 @@
             var testUser = {
                 name: '測試用戶',
                 email: 'test@example.com',
-                avatar: 'https://via.placeholder.com/80x80/4F46E5/FFFFFF?text=👤'
+                avatar: '' // 使用預設頭像
             };
             localStorage.setItem('userProfile', JSON.stringify(testUser));
             console.log('已創建測試用戶資料:', testUser);
@@ -925,15 +928,28 @@
                     // 設定頭像
                     if (user.avatar && user.avatar !== '') {
                         userAvatarElement.src = user.avatar;
+                        userAvatarElement.style.display = 'block';
+                        document.getElementById('default-avatar').style.display = 'none';
                     } else {
                         // 使用預設頭像
-                        userAvatarElement.src = 'https://via.placeholder.com/80x80/4F46E5/FFFFFF?text=' + encodeURIComponent(displayName.charAt(0).toUpperCase());
+                        userAvatarElement.style.display = 'none';
+                        var defaultAvatar = document.getElementById('default-avatar');
+                        defaultAvatar.style.display = 'flex';
+                        // 如果有名字，顯示首字母
+                        if (displayName && displayName !== '用戶') {
+                            defaultAvatar.textContent = displayName.charAt(0).toUpperCase();
+                        } else {
+                            defaultAvatar.textContent = '👤';
+                        }
                     }
                 } else {
                     // 如果沒有用戶資料，顯示預設值
                     userNameElement.textContent = '訪客';
                     userRoleElement.innerHTML = '<span class="w-2 h-2 bg-gray-400 rounded-full mr-2"></span>👤 訪客';
-                    userAvatarElement.src = 'https://via.placeholder.com/80x80/9CA3AF/FFFFFF?text=👤';
+                    userAvatarElement.style.display = 'none';
+                    var defaultAvatar = document.getElementById('default-avatar');
+                    defaultAvatar.style.display = 'flex';
+                    defaultAvatar.textContent = '👤';
                 }
                 
                 // 根據角色顯示/隱藏家長專用功能
@@ -955,6 +971,11 @@
                 // 顯示錯誤狀態
                 document.getElementById('user-info-name').textContent = '載入失敗';
                 document.getElementById('user-info-role').innerHTML = '<span class="w-2 h-2 bg-red-500 rounded-full mr-2"></span>❌ 錯誤';
+                // 顯示預設頭像
+                document.getElementById('user-info-avatar').style.display = 'none';
+                var defaultAvatar = document.getElementById('default-avatar');
+                defaultAvatar.style.display = 'flex';
+                defaultAvatar.textContent = '❌';
             }
         }
 
@@ -1972,7 +1993,7 @@
                     var basicUser = {
                         name: '用戶',
                         email: 'user@example.com',
-                        avatar: ''
+                        avatar: '' // 使用預設頭像
                     };
                     localStorage.setItem('userProfile', JSON.stringify(basicUser));
                     console.log('已創建基本用戶資料');
