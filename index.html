@@ -150,6 +150,40 @@
         .avatar-user {
             @apply bg-gradient-to-r from-yellow-500 to-yellow-600;
         }
+        
+        /* AI 載入動畫 */
+        .ai-loading-message {
+            @apply mb-4 flex items-center space-x-3 p-4 bg-white rounded-lg shadow-sm border border-gray-200;
+        }
+        
+        .ai-loading-spinner {
+            @apply w-6 h-6 border-2 border-blue-200 border-t-blue-500 rounded-full animate-spin;
+        }
+        
+        @keyframes ai-loading-bounce {
+            0%, 20%, 53%, 80%, 100% {
+                transform: translate3d(0, 0, 0);
+            }
+            40%, 43% {
+                transform: translate3d(0, -8px, 0);
+            }
+            70% {
+                transform: translate3d(0, -4px, 0);
+            }
+            90% {
+                transform: translate3d(0, -2px, 0);
+            }
+        }
+        
+        .ai-loading-bounce {
+            animation: ai-loading-bounce 2s infinite;
+        }
+        
+        /* 訊息氣泡樣式 */
+        .message-content {
+            white-space: pre-line;
+            word-wrap: break-word;
+        }
     </style>
 </head>
 <body class="bg-gray-100 font-sans antialiased text-gray-800">
@@ -194,6 +228,59 @@
                     English
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- 用戶資訊頁面（登入後的歡迎頁面） -->
+    <div id="user-info-page" class="min-h-screen hidden">
+        <div class="max-w-2xl mx-auto bg-white min-h-screen">
+            <header class="bg-gradient-to-r from-yellow-400 to-yellow-300 text-gray-800 p-4 sm:p-6 relative">
+                <button onclick="logout()" class="absolute right-2 sm:right-4 top-4 sm:top-6 text-gray-800 hover:text-gray-600 transition-colors text-sm sm:text-base">
+                    <span data-zh="登出" data-en="Logout">登出</span>
+                </button>
+                <div class="text-center px-12 sm:px-0">
+                    <h1 class="text-base sm:text-xl lg:text-2xl font-bold mb-1 sm:mb-2 leading-tight" data-zh="歡迎回來！" data-en="Welcome Back!">歡迎回來！</h1>
+                    <p class="text-gray-600 text-xs sm:text-base leading-tight" data-zh="繼續您的留學規劃之旅" data-en="Continue your study abroad planning journey">繼續您的留學規劃之旅</p>
+                </div>
+            </header>
+
+            <main class="p-6">
+                <!-- 用戶資訊卡片 -->
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-100 mb-6">
+                    <div class="flex items-center mb-4">
+                        <img id="user-info-avatar" class="w-16 h-16 rounded-full mr-4" src="" alt="User Avatar">
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800" id="user-info-name">用戶名稱</h2>
+                            <p class="text-gray-600" id="user-info-role">學生</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-700" data-zh="您的留學規劃資料已準備就緒，讓我們開始諮詢吧！" data-en="Your study abroad planning data is ready, let's start consulting!">您的留學規劃資料已準備就緒，讓我們開始諮詢吧！</p>
+                </div>
+
+                <!-- 主要操作按鈕 -->
+                <div class="space-y-4">
+                    <button onclick="continueToChat()" class="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-800 py-4 px-6 rounded-xl font-semibold hover:from-yellow-500 hover:to-yellow-600 transition-all duration-200 text-lg shadow-lg flex items-center justify-center">
+                        <span class="mr-2">💬</span>
+                        <span data-zh="繼續跟AI留學顧問諮詢" data-en="Continue Consulting with AI Study Abroad Advisor">繼續跟AI留學顧問諮詢</span>
+                    </button>
+                    
+                    <button onclick="openUserSettings()" class="w-full bg-white text-gray-700 py-3 px-6 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors font-medium flex items-center justify-center">
+                        <span class="mr-2">⚙️</span>
+                        <span data-zh="編輯設定資料" data-en="Edit Settings">編輯設定資料</span>
+                    </button>
+                </div>
+
+                <!-- 家長專用功能 -->
+                <div id="parent-only-section" class="mt-6 hidden">
+                    <div class="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-100">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-3" data-zh="家長專用功能" data-en="Parent-Only Features">家長專用功能</h3>
+                        <button onclick="queryStudentProgress()" class="w-full bg-green-500 text-white py-3 px-4 rounded-lg hover:bg-green-600 transition-colors font-medium">
+                            <span class="mr-2">📊</span>
+                            <span data-zh="查詢學生進度" data-en="Query Student Progress">查詢學生進度</span>
+                        </button>
+                    </div>
+                </div>
+            </main>
         </div>
     </div>
 
@@ -457,6 +544,139 @@
         </div>
     </div>
 
+    <!-- 用戶設定模態框 -->
+    <div id="user-settings-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between p-6 border-b border-gray-200">
+                <h2 class="text-xl font-bold text-gray-800" data-zh="個人設定" data-en="Personal Settings">個人設定</h2>
+                <button onclick="closeUserSettings()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <!-- 基本資訊 -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4" data-zh="基本資訊" data-en="Basic Information">基本資訊</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="顯示名稱" data-en="Display Name">顯示名稱</label>
+                            <input type="text" id="settings-display-name" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2" data-zh="語言偏好" data-en="Language Preference">語言偏好</label>
+                            <select id="settings-language" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="zh" data-zh="中文" data-en="Chinese">中文</option>
+                                <option value="en" data-zh="English" data-en="English">English</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 通知設定 -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4" data-zh="通知設定" data-en="Notification Settings">通知設定</h3>
+                    <div class="space-y-3">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="settings-email-notifications" class="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <span class="text-gray-700" data-zh="接收電子郵件通知" data-en="Receive email notifications">接收電子郵件通知</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="settings-push-notifications" class="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <span class="text-gray-700" data-zh="接收推送通知" data-en="Receive push notifications">接收推送通知</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 隱私設定 -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4" data-zh="隱私設定" data-en="Privacy Settings">隱私設定</h3>
+                    <div class="space-y-3">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="settings-data-sharing" class="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <span class="text-gray-700" data-zh="允許匿名數據分享以改善服務" data-en="Allow anonymous data sharing to improve service">允許匿名數據分享以改善服務</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 編輯設定資料 -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4" data-zh="留學設定資料" data-en="Study Abroad Settings">留學設定資料</h3>
+                    <div id="profile-data-display" class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-gray-600 text-center" data-zh="載入中..." data-en="Loading...">載入中...</p>
+                    </div>
+                    <button onclick="editProfileData()" class="w-full mt-3 bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors">
+                        <span data-zh="編輯設定資料" data-en="Edit Profile Data">編輯設定資料</span>
+                    </button>
+                </div>
+
+                <!-- 操作按鈕 -->
+                <div class="flex space-x-3">
+                    <button onclick="saveUserSettings()" class="flex-1 bg-green-500 text-white py-3 px-4 rounded-lg hover:bg-green-600 transition-colors font-medium">
+                        <span data-zh="儲存設定" data-en="Save Settings">儲存設定</span>
+                    </button>
+                    <button onclick="closeUserSettings()" class="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-400 transition-colors font-medium">
+                        <span data-zh="取消" data-en="Cancel">取消</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 編輯設定資料模態框 -->
+    <div id="edit-profile-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between p-6 border-b border-gray-200">
+                <h2 class="text-xl font-bold text-gray-800" data-zh="編輯留學設定" data-en="Edit Study Abroad Settings">編輯留學設定</h2>
+                <button onclick="closeEditProfileModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <form id="edit-profile-form">
+                    <!-- 這裡會動態載入設定表單 -->
+                    <div id="edit-profile-content">
+                        <p class="text-gray-600 text-center" data-zh="載入設定資料中..." data-en="Loading settings data...">載入設定資料中...</p>
+                    </div>
+                    
+                    <div class="flex space-x-3 mt-6">
+                        <button type="submit" class="flex-1 bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition-colors font-medium">
+                            <span data-zh="儲存變更" data-en="Save Changes">儲存變更</span>
+                        </button>
+                        <button type="button" onclick="closeEditProfileModal()" class="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-400 transition-colors font-medium">
+                            <span data-zh="取消" data-en="Cancel">取消</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 學生進度查詢模態框 -->
+    <div id="student-progress-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between p-6 border-b border-gray-200">
+                <h2 class="text-xl font-bold text-gray-800" data-zh="學生諮詢進度" data-en="Student Consultation Progress">學生諮詢進度</h2>
+                <button onclick="closeStudentProgressModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <div id="student-progress-content">
+                    <p class="text-gray-600 text-center" data-zh="載入進度資料中..." data-en="Loading progress data...">載入進度資料中...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // 全局變量
         var currentRole = 'student';
@@ -655,6 +875,449 @@
             showSetupPage();
         }
 
+        // 載入用戶資訊
+        function loadUserInfo() {
+            try {
+                var userProfile = localStorage.getItem('userProfile');
+                if (userProfile) {
+                    var user = JSON.parse(userProfile);
+                    document.getElementById('user-info-name').textContent = user.name || '用戶';
+                    document.getElementById('user-info-role').textContent = currentRole === 'parent' ? '家長' : '學生';
+                    if (user.avatar) {
+                        document.getElementById('user-info-avatar').src = user.avatar;
+                    }
+                }
+                
+                // 根據角色顯示/隱藏家長專用功能
+                var parentSection = document.getElementById('parent-only-section');
+                if (currentRole === 'parent') {
+                    parentSection.classList.remove('hidden');
+                } else {
+                    parentSection.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('載入用戶資訊失敗:', error);
+            }
+        }
+
+        // 繼續到聊天
+        function continueToChat() {
+            // 檢查是否有 profile 資料
+            if (!profileId) {
+                // 檢查本地儲存的 profileId
+                var storedProfileId = localStorage.getItem('profileId');
+                if (storedProfileId) {
+                    profileId = storedProfileId;
+                } else {
+                    // 沒有 profile 資料，跳轉到設定頁面
+                    showSetupPage();
+                    return;
+                }
+            }
+            showChatPage();
+        }
+
+        // 開啟用戶設定
+        function openUserSettings() {
+            document.getElementById('user-settings-modal').classList.remove('hidden');
+            loadUserSettings();
+        }
+
+        // 關閉用戶設定
+        function closeUserSettings() {
+            document.getElementById('user-settings-modal').classList.add('hidden');
+        }
+
+        // 載入用戶設定
+        function loadUserSettings() {
+            try {
+                var userProfile = localStorage.getItem('userProfile');
+                if (userProfile) {
+                    var user = JSON.parse(userProfile);
+                    document.getElementById('settings-display-name').value = user.name || '';
+                }
+                
+                document.getElementById('settings-language').value = currentLanguage;
+                
+                // 載入通知設定
+                loadNotificationSettings();
+                
+                // 載入 profile 資料
+                loadUserProfileData();
+            } catch (error) {
+                console.error('載入用戶設定失敗:', error);
+            }
+        }
+
+        // 載入通知設定
+        function loadNotificationSettings() {
+            try {
+                var jwt = localStorage.getItem('jwt');
+                if (!jwt) return;
+                
+                fetch(window.__CONFIG__.API_BASE + '/user/notification-settings', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + jwt,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(result) {
+                    if (result.ok && result.data) {
+                        document.getElementById('settings-email-notifications').checked = result.data.email_notifications || false;
+                        document.getElementById('settings-push-notifications').checked = result.data.push_notifications || false;
+                    }
+                })
+                .catch(function(error) {
+                    console.error('載入通知設定失敗:', error);
+                });
+            } catch (error) {
+                console.error('載入通知設定失敗:', error);
+            }
+        }
+
+        // 載入用戶 profile 資料
+        function loadUserProfileData() {
+            try {
+                if (!profileId) {
+                    document.getElementById('profile-data-display').innerHTML = 
+                        '<p class="text-yellow-600 text-center" data-zh="尚未設定留學需求資料" data-en="Study abroad requirements not set yet">尚未設定留學需求資料</p>';
+                    return;
+                }
+                
+                var jwt = localStorage.getItem('jwt');
+                if (!jwt) return;
+                
+                fetch(window.__CONFIG__.API_BASE + '/user/profile/' + profileId, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + jwt,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(result) {
+                    if (result.ok && result.data) {
+                        var profile = result.data;
+                        var displayHtml = '<div class="space-y-2">';
+                        
+                        if (profile.student_name) {
+                            displayHtml += '<p><span class="font-medium">學生姓名：</span>' + profile.student_name + '</p>';
+                        }
+                        if (profile.gpa) {
+                            displayHtml += '<p><span class="font-medium">GPA：</span>' + profile.gpa + '</p>';
+                        }
+                        if (profile.degree) {
+                            displayHtml += '<p><span class="font-medium">目標學位：</span>' + profile.degree + '</p>';
+                        }
+                        if (profile.countries && profile.countries.length > 0) {
+                            displayHtml += '<p><span class="font-medium">目標國家：</span>' + profile.countries.join(', ') + '</p>';
+                        }
+                        if (profile.budget) {
+                            displayHtml += '<p><span class="font-medium">預算：</span>$' + profile.budget.toLocaleString() + ' USD/年</p>';
+                        }
+                        if (profile.target_intake) {
+                            displayHtml += '<p><span class="font-medium">目標入學時間：</span>' + profile.target_intake + '</p>';
+                        }
+                        
+                        displayHtml += '</div>';
+                        document.getElementById('profile-data-display').innerHTML = displayHtml;
+                    } else {
+                        document.getElementById('profile-data-display').innerHTML = 
+                            '<p class="text-yellow-600 text-center" data-zh="載入設定資料失敗" data-en="Failed to load settings data">載入設定資料失敗</p>';
+                    }
+                })
+                .catch(function(error) {
+                    console.error('載入 profile 資料失敗:', error);
+                    document.getElementById('profile-data-display').innerHTML = 
+                        '<p class="text-red-600 text-center" data-zh="載入設定資料失敗" data-en="Failed to load settings data">載入設定資料失敗</p>';
+                });
+            } catch (error) {
+                console.error('載入 profile 資料失敗:', error);
+            }
+        }
+
+        // 儲存用戶設定
+        function saveUserSettings() {
+            try {
+                var jwt = localStorage.getItem('jwt');
+                if (!jwt) {
+                    alert(currentLanguage === 'en' ? 'Please login first' : '請先登入');
+                    return;
+                }
+                
+                var settings = {
+                    display_name: document.getElementById('settings-display-name').value,
+                    language: document.getElementById('settings-language').value,
+                    email_notifications: document.getElementById('settings-email-notifications').checked,
+                    push_notifications: document.getElementById('settings-push-notifications').checked,
+                    data_sharing: document.getElementById('settings-data-sharing').checked
+                };
+                
+                // 儲存通知設定
+                fetch(window.__CONFIG__.API_BASE + '/user/notification-settings', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + jwt,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email_notifications: settings.email_notifications,
+                        push_notifications: settings.push_notifications
+                    })
+                })
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(result) {
+                    if (result.ok) {
+                        // 更新語言
+                        if (settings.language !== currentLanguage) {
+                            switchLanguage(settings.language);
+                        }
+                        
+                        alert(currentLanguage === 'en' ? 'Settings saved successfully!' : '設定已儲存！');
+                        closeUserSettings();
+                    } else {
+                        alert(currentLanguage === 'en' ? 'Failed to save settings' : '儲存設定失敗');
+                    }
+                })
+                .catch(function(error) {
+                    console.error('儲存設定失敗:', error);
+                    alert(currentLanguage === 'en' ? 'Failed to save settings' : '儲存設定失敗');
+                });
+            } catch (error) {
+                console.error('儲存設定失敗:', error);
+                alert(currentLanguage === 'en' ? 'Failed to save settings' : '儲存設定失敗');
+            }
+        }
+
+        // 編輯 profile 資料
+        function editProfileData() {
+            document.getElementById('edit-profile-modal').classList.remove('hidden');
+            loadEditProfileForm();
+        }
+
+        // 關閉編輯 profile 模態框
+        function closeEditProfileModal() {
+            document.getElementById('edit-profile-modal').classList.add('hidden');
+        }
+
+        // 載入編輯 profile 表單
+        function loadEditProfileForm() {
+            try {
+                if (!profileId) {
+                    document.getElementById('edit-profile-content').innerHTML = 
+                        '<p class="text-yellow-600 text-center" data-zh="尚未設定留學需求資料" data-en="Study abroad requirements not set yet">尚未設定留學需求資料</p>';
+                    return;
+                }
+                
+                var jwt = localStorage.getItem('jwt');
+                if (!jwt) return;
+                
+                fetch(window.__CONFIG__.API_BASE + '/user/profile/' + profileId, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + jwt,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(result) {
+                    if (result.ok && result.data) {
+                        var profile = result.data;
+                        var formHtml = '<div class="space-y-4">';
+                        
+                        formHtml += '<div>';
+                        formHtml += '<label class="block text-sm font-medium text-gray-700 mb-2" data-zh="學生姓名" data-en="Student Name">學生姓名</label>';
+                        formHtml += '<input type="text" id="edit-student-name" value="' + (profile.student_name || '') + '" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">';
+                        formHtml += '</div>';
+                        
+                        formHtml += '<div>';
+                        formHtml += '<label class="block text-sm font-medium text-gray-700 mb-2" data-zh="GPA" data-en="GPA">GPA</label>';
+                        formHtml += '<input type="number" id="edit-gpa" step="0.1" min="0" max="4" value="' + (profile.gpa || '') + '" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">';
+                        formHtml += '</div>';
+                        
+                        formHtml += '<div>';
+                        formHtml += '<label class="block text-sm font-medium text-gray-700 mb-2" data-zh="預算 (USD/年)" data-en="Budget (USD/year)">預算 (USD/年)</label>';
+                        formHtml += '<input type="number" id="edit-budget" value="' + (profile.budget || '') + '" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">';
+                        formHtml += '</div>';
+                        
+                        formHtml += '</div>';
+                        document.getElementById('edit-profile-content').innerHTML = formHtml;
+                    } else {
+                        document.getElementById('edit-profile-content').innerHTML = 
+                            '<p class="text-yellow-600 text-center" data-zh="載入設定資料失敗" data-en="Failed to load settings data">載入設定資料失敗</p>';
+                    }
+                })
+                .catch(function(error) {
+                    console.error('載入編輯表單失敗:', error);
+                    document.getElementById('edit-profile-content').innerHTML = 
+                        '<p class="text-red-600 text-center" data-zh="載入設定資料失敗" data-en="Failed to load settings data">載入設定資料失敗</p>';
+                });
+            } catch (error) {
+                console.error('載入編輯表單失敗:', error);
+            }
+        }
+
+        // 查詢學生進度（家長專用）
+        function queryStudentProgress() {
+            document.getElementById('student-progress-modal').classList.remove('hidden');
+            loadStudentProgress();
+        }
+
+        // 關閉學生進度模態框
+        function closeStudentProgressModal() {
+            document.getElementById('student-progress-modal').classList.add('hidden');
+        }
+
+        // 載入學生進度
+        function loadStudentProgress() {
+            try {
+                var jwt = localStorage.getItem('jwt');
+                if (!jwt) {
+                    document.getElementById('student-progress-content').innerHTML = 
+                        '<p class="text-red-600 text-center" data-zh="請先登入" data-en="Please login first">請先登入</p>';
+                    return;
+                }
+                
+                fetch(window.__CONFIG__.API_BASE + '/parent/student-progress', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + jwt,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(result) {
+                    if (result.ok && result.data) {
+                        var progress = result.data;
+                        var progressHtml = '<div class="space-y-6">';
+                        
+                        // 活動統計
+                        progressHtml += '<div class="bg-blue-50 p-4 rounded-lg">';
+                        progressHtml += '<h3 class="text-lg font-semibold text-gray-800 mb-3" data-zh="活動統計" data-en="Activity Statistics">活動統計</h3>';
+                        progressHtml += '<div class="grid grid-cols-2 gap-4">';
+                        progressHtml += '<div class="text-center"><div class="text-2xl font-bold text-blue-600">' + (progress.total_sessions || 0) + '</div><div class="text-sm text-gray-600" data-zh="諮詢次數" data-en="Consultation Sessions">諮詢次數</div></div>';
+                        progressHtml += '<div class="text-center"><div class="text-2xl font-bold text-green-600">' + (progress.total_messages || 0) + '</div><div class="text-sm text-gray-600" data-zh="對話數" data-en="Messages">對話數</div></div>';
+                        progressHtml += '</div></div>';
+                        
+                        // 最近話題
+                        if (progress.recent_topics && progress.recent_topics.length > 0) {
+                            progressHtml += '<div class="bg-green-50 p-4 rounded-lg">';
+                            progressHtml += '<h3 class="text-lg font-semibold text-gray-800 mb-3" data-zh="最近討論話題" data-en="Recent Topics">最近討論話題</h3>';
+                            progressHtml += '<ul class="space-y-2">';
+                            for (var i = 0; i < progress.recent_topics.length; i++) {
+                                progressHtml += '<li class="flex items-center"><span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>' + progress.recent_topics[i] + '</li>';
+                            }
+                            progressHtml += '</ul></div>';
+                        }
+                        
+                        // AI 分析建議
+                        if (progress.ai_analysis) {
+                            progressHtml += '<div class="bg-yellow-50 p-4 rounded-lg">';
+                            progressHtml += '<h3 class="text-lg font-semibold text-gray-800 mb-3" data-zh="AI 分析建議" data-en="AI Analysis & Recommendations">AI 分析建議</h3>';
+                            progressHtml += '<div class="text-gray-700">' + progress.ai_analysis + '</div>';
+                            progressHtml += '</div>';
+                        }
+                        
+                        progressHtml += '</div>';
+                        document.getElementById('student-progress-content').innerHTML = progressHtml;
+                    } else {
+                        document.getElementById('student-progress-content').innerHTML = 
+                            '<p class="text-yellow-600 text-center" data-zh="暫無進度資料" data-en="No progress data available">暫無進度資料</p>';
+                    }
+                })
+                .catch(function(error) {
+                    console.error('載入學生進度失敗:', error);
+                    document.getElementById('student-progress-content').innerHTML = 
+                        '<p class="text-red-600 text-center" data-zh="載入進度資料失敗" data-en="Failed to load progress data">載入進度資料失敗</p>';
+                });
+            } catch (error) {
+                console.error('載入學生進度失敗:', error);
+            }
+        }
+
+        // AI 載入動畫
+        function showAILoading() {
+            var loadingDiv = document.createElement('div');
+            loadingDiv.id = 'ai-loading';
+            loadingDiv.className = 'ai-loading-message';
+            loadingDiv.innerHTML = '<div class="ai-loading-spinner"></div><span data-zh="AI 正在思考中..." data-en="AI is thinking...">AI 正在思考中...</span>';
+            document.getElementById('chat-container').appendChild(loadingDiv);
+            document.getElementById('chat-container').scrollTop = document.getElementById('chat-container').scrollHeight;
+        }
+
+        function hideAILoading() {
+            var loadingDiv = document.getElementById('ai-loading');
+            if (loadingDiv) {
+                loadingDiv.remove();
+            }
+        }
+
+        // 載入聊天歷史
+        function loadChatHistory() {
+            try {
+                var chatHistory = localStorage.getItem('chatHistory_' + profileId);
+                if (chatHistory) {
+                    var messages = JSON.parse(chatHistory);
+                    var chatContainer = document.getElementById('chat-container');
+                    
+                    // 清空現有內容（保留歡迎訊息）
+                    var welcomeMessage = chatContainer.querySelector('.bg-white.rounded-lg.shadow-sm.border.border-gray-200');
+                    chatContainer.innerHTML = '';
+                    if (welcomeMessage) {
+                        chatContainer.appendChild(welcomeMessage);
+                    }
+                    
+                    // 載入歷史訊息
+                    for (var i = 0; i < messages.length; i++) {
+                        addMessage(messages[i].message, messages[i].sender, false);
+                    }
+                } else {
+                    // 沒有歷史記錄，發送歡迎訊息
+                    sendWelcomeMessage();
+                }
+            } catch (error) {
+                console.error('載入聊天歷史失敗:', error);
+                sendWelcomeMessage();
+            }
+        }
+
+        // 儲存聊天歷史
+        function saveChatHistory(message, sender) {
+            try {
+                if (!profileId) return;
+                
+                var chatHistory = localStorage.getItem('chatHistory_' + profileId);
+                var messages = chatHistory ? JSON.parse(chatHistory) : [];
+                
+                messages.push({
+                    message: message,
+                    sender: sender,
+                    timestamp: new Date().toISOString()
+                });
+                
+                // 只保留最近 50 條訊息
+                if (messages.length > 50) {
+                    messages = messages.slice(-50);
+                }
+                
+                localStorage.setItem('chatHistory_' + profileId, JSON.stringify(messages));
+            } catch (error) {
+                console.error('儲存聊天歷史失敗:', error);
+            }
+        }
+
 
         // 初始化年份選項
         function initializeYearOptions() {
@@ -757,6 +1420,7 @@
         // 頁面切換
         function showLoginPage() {
             document.getElementById('login-page').classList.remove('hidden');
+            document.getElementById('user-info-page').classList.add('hidden');
             document.getElementById('setup-page').classList.add('hidden');
             document.getElementById('chat-page').classList.add('hidden');
         }
@@ -787,14 +1451,26 @@
             }
         }
 
+        function showUserInfoPage() {
+            document.getElementById('login-page').classList.add('hidden');
+            document.getElementById('user-info-page').classList.remove('hidden');
+            document.getElementById('setup-page').classList.add('hidden');
+            document.getElementById('chat-page').classList.add('hidden');
+            
+            // 載入用戶資訊
+            loadUserInfo();
+        }
+
         function showSetupPage() {
             document.getElementById('login-page').classList.add('hidden');
+            document.getElementById('user-info-page').classList.add('hidden');
             document.getElementById('setup-page').classList.remove('hidden');
             document.getElementById('chat-page').classList.add('hidden');
         }
 
         function showChatPage() {
             document.getElementById('login-page').classList.add('hidden');
+            document.getElementById('user-info-page').classList.add('hidden');
             document.getElementById('setup-page').classList.add('hidden');
             document.getElementById('chat-page').classList.remove('hidden');
             
@@ -802,8 +1478,8 @@
             switchLanguage(currentLanguage);
             
             loadQuickActions();
-            // 自動發送打招呼訊息
-            sendWelcomeMessage();
+            // 載入聊天歷史
+            loadChatHistory();
         }
 
         // 處理設定提交
@@ -868,7 +1544,8 @@
                 .then(function(result) {
                     if (result.ok) {
                         profileId = result.data.profile_id;
-                        showChatPage();
+                        localStorage.setItem('profileId', profileId);
+                        showUserInfoPage();
                     } else {
                         alert('提交失敗：' + result.error);
                     }
@@ -897,12 +1574,20 @@
         function sendMessage() {
             var input = document.getElementById('message-input');
             var message = input.value.trim();
+            var sendBtn = document.getElementById('send-btn');
             
             if (!message) return;
+
+            // 禁用發送按鈕
+            sendBtn.disabled = true;
+            sendBtn.textContent = currentLanguage === 'en' ? 'Sending...' : '發送中...';
 
             // 添加用戶消息到聊天
             addMessage(message, 'user');
             input.value = '';
+
+            // 顯示 AI 載入動畫
+            showAILoading();
 
             try {
                 var authHeader = {};
@@ -932,24 +1617,40 @@
                     return response.json();
                 })
                 .then(function(result) {
+                    // 隱藏 AI 載入動畫
+                    hideAILoading();
+                    
                     if (result.ok) {
-                        addMessage(result.data.response, 'ai');
+                        addMessage(result.reply || result.data.response, 'ai');
                     } else {
                         addMessage('抱歉，我無法處理您的請求。請稍後再試。', 'ai');
                     }
                 })
                 .catch(function(error) {
                     console.error('Chat failed:', error);
+                    // 隱藏 AI 載入動畫
+                    hideAILoading();
                     addMessage('抱歉，網路連接出現問題。請檢查您的網路連接。', 'ai');
+                })
+                .finally(function() {
+                    // 重新啟用發送按鈕
+                    sendBtn.disabled = false;
+                    sendBtn.innerHTML = '<span data-zh="送出" data-en="Send">送出</span>';
                 });
             } catch (error) {
                 console.error('Chat failed:', error);
+                // 隱藏 AI 載入動畫
+                hideAILoading();
                 addMessage('抱歉，網路連接出現問題。請檢查您的網路連接。', 'ai');
+                
+                // 重新啟用發送按鈕
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = '<span data-zh="送出" data-en="Send">送出</span>';
             }
         }
 
         // 添加消息到聊天
-        function addMessage(message, sender) {
+        function addMessage(message, sender, shouldScroll = true) {
             var chatContainer = document.getElementById('chat-container');
             var messageWrapper = document.createElement('div');
             
@@ -979,30 +1680,38 @@
                                 '<p class="text-sm text-gray-500">' + aiSubtitle + '</p>' +
                             '</div>' +
                         '</div>' +
-                        '<div class="text-gray-700 leading-relaxed">' + message + '</div>' +
+                        '<div class="text-gray-700 leading-relaxed message-content">' + message + '</div>' +
                         '<div class="text-xs text-gray-400 mt-3">' + currentTime + '</div>' +
                     '</div>';
             }
             
             chatContainer.appendChild(messageWrapper);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            if (shouldScroll) {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+            
+            // 儲存到聊天歷史
+            saveChatHistory(message, sender);
         }
 
         // 發送歡迎訊息
         function sendWelcomeMessage() {
             if (!profileId) return;
             
-            // 立即顯示歡迎訊息，不等待 API 回應
-            var welcomeText = '';
-            if (currentLanguage === 'en') {
-                welcomeText = '🎓 Hello! I am your AI Study Abroad Advisor.\n\nI have reviewed your basic information, now let\'s dive deep into your study abroad planning!\n\nYou can ask me any questions about studying abroad, such as:\n\n• School and major recommendations\n• Application timeline planning\n• Scholarship opportunities\n• Visa and accommodation guidance\n\nWhat would you like to know first?';
-            } else {
-                welcomeText = '🎓 您好！我是您的AI留學顧問。\n\n我已經了解了您的基本資訊，現在讓我們深入討論您的留學計劃吧！\n\n您可以問我任何關於留學的問題，比如：\n\n• 推薦適合的學校和專業\n• 申請時間規劃\n• 獎學金申請建議\n• 簽證與住宿資訊\n\n您想先了解哪個部分呢？';
+            // 檢查是否有聊天歷史
+            var chatHistory = localStorage.getItem('chatHistory_' + profileId);
+            if (chatHistory) {
+                var messages = JSON.parse(chatHistory);
+                if (messages.length > 0) {
+                    // 有聊天歷史，不發送歡迎訊息
+                    return;
+                }
             }
             
-            addMessage(welcomeText, 'ai');
+            // 顯示 AI 載入動畫
+            showAILoading();
             
-            // 同時發送 API 請求獲取更詳細的回覆
             try {
                 var authHeader = {};
                 var jwt = localStorage.getItem('jwt');
@@ -1031,17 +1740,35 @@
                     return response.json();
                 })
                 .then(function(result) {
+                    // 隱藏 AI 載入動畫
+                    hideAILoading();
+                    
                     if (result.ok) {
-                        addMessage(result.data.response, 'ai');
+                        addMessage(result.reply || result.data.response, 'ai');
                     } else {
                         console.error('Welcome message failed:', result);
+                        // 如果 API 失敗，顯示預設歡迎訊息
+                        var welcomeText = currentLanguage === 'en' ? 
+                            '🎓 Hello! I am your AI Study Abroad Advisor.\n\nI have reviewed your basic information, now let\'s dive deep into your study abroad planning!\n\nYou can ask me any questions about studying abroad, such as:\n\n• School and major recommendations\n• Application timeline planning\n• Scholarship opportunities\n• Visa and accommodation guidance\n\nWhat would you like to know first?' :
+                            '🎓 您好！我是您的AI留學顧問。\n\n我已經了解了您的基本資訊，現在讓我們深入討論您的留學計劃吧！\n\n您可以問我任何關於留學的問題，比如：\n\n• 推薦適合的學校和專業\n• 申請時間規劃\n• 獎學金申請建議\n• 簽證與住宿資訊\n\n您想先了解哪個部分呢？';
+                        addMessage(welcomeText, 'ai');
                     }
                 })
                 .catch(function(error) {
                     console.error('Welcome message error:', error);
+                    // 隱藏 AI 載入動畫
+                    hideAILoading();
+                    
+                    // 如果 API 失敗，顯示預設歡迎訊息
+                    var welcomeText = currentLanguage === 'en' ? 
+                        '🎓 Hello! I am your AI Study Abroad Advisor.\n\nI have reviewed your basic information, now let\'s dive deep into your study abroad planning!\n\nYou can ask me any questions about studying abroad, such as:\n\n• School and major recommendations\n• Application timeline planning\n• Scholarship opportunities\n• Visa and accommodation guidance\n\nWhat would you like to know first?' :
+                        '🎓 您好！我是您的AI留學顧問。\n\n我已經了解了您的基本資訊，現在讓我們深入討論您的留學計劃吧！\n\n您可以問我任何關於留學的問題，比如：\n\n• 推薦適合的學校和專業\n• 申請時間規劃\n• 獎學金申請建議\n• 簽證與住宿資訊\n\n您想先了解哪個部分呢？';
+                    addMessage(welcomeText, 'ai');
                 });
             } catch (error) {
                 console.error('Welcome message error:', error);
+                // 隱藏 AI 載入動畫
+                hideAILoading();
             }
         }
 
@@ -1089,11 +1816,53 @@
             }
         }
         
+        // 智能登入流程檢查
+        function checkUserProfileStatus() {
+            try {
+                var jwt = localStorage.getItem('jwt');
+                if (!jwt) {
+                    showLoginPage();
+                    return;
+                }
+                
+                fetch(window.__CONFIG__.API_BASE + '/user/check-profile', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + jwt,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(result) {
+                    if (result.ok && result.has_profile) {
+                        // 有 profile 資料，顯示用戶資訊頁面
+                        profileId = result.profile_id;
+                        localStorage.setItem('profileId', profileId);
+                        showUserInfoPage();
+                    } else {
+                        // 沒有 profile 資料，跳轉到設定頁面
+                        showSetupPage();
+                    }
+                })
+                .catch(function(error) {
+                    console.error('檢查用戶狀態失敗:', error);
+                    showLoginPage();
+                });
+            } catch (error) {
+                console.error('檢查用戶狀態失敗:', error);
+                showLoginPage();
+            }
+        }
+
         // 頁面載入時檢查登入狀態
         window.onload = function() {
-            // 清除可能無效的舊 token（用於測試）
-            // 取消註解下面這行來強制顯示登入頁面
-            localStorage.removeItem('jwt');
+            // 檢查本地儲存的 profileId
+            var storedProfileId = localStorage.getItem('profileId');
+            if (storedProfileId) {
+                profileId = storedProfileId;
+            }
             
             // 檢查 URL 參數中的 token
             var urlParams = new URLSearchParams(window.location.search);
@@ -1122,25 +1891,69 @@
                 alert(errorMessage);
                 // 清除 URL 參數
                 window.history.replaceState({}, document.title, window.location.pathname);
+                showLoginPage();
+                return;
             }
             
             if (token) {
-                // 儲存 token 並跳轉到設定頁面
+                // 儲存 token 並檢查用戶狀態
                 localStorage.setItem('jwt', token);
-                showSetupPage();
+                
+                // 儲存用戶資料到 localStorage
+                var userInfo = urlParams.get('user');
+                if (userInfo) {
+                    try {
+                        var user = JSON.parse(decodeURIComponent(userInfo));
+                        localStorage.setItem('userProfile', JSON.stringify(user));
+                    } catch (e) {
+                        console.error('解析用戶資料失敗:', e);
+                    }
+                }
+                
+                // 智能檢查用戶狀態
+                checkUserProfileStatus();
+                
                 // 清除 URL 參數
                 window.history.replaceState({}, document.title, window.location.pathname);
             } else {
                 // 檢查本地儲存的 token
                 var storedToken = localStorage.getItem('jwt');
                 if (storedToken) {
-                    // 驗證 token 是否有效
-                    validateToken(storedToken);
+                    // 驗證 token 是否有效並檢查用戶狀態
+                    validateTokenAndCheckProfile(storedToken);
                 } else {
                     showLoginPage();
                 }
             }
         };
+
+        // 驗證 token 並檢查用戶狀態
+        function validateTokenAndCheckProfile(token) {
+            try {
+                var parts = token.split('.');
+                if (parts.length !== 3) {
+                    throw new Error('Invalid token format');
+                }
+                
+                // 檢查 token 是否過期（簡單檢查）
+                var payload = JSON.parse(atob(parts[1]));
+                var currentTime = Math.floor(Date.now() / 1000);
+                
+                if (payload.exp && payload.exp < currentTime) {
+                    throw new Error('Token expired');
+                }
+                
+                // Token 有效，檢查用戶狀態
+                checkUserProfileStatus();
+            } catch (error) {
+                console.log('Token validation failed:', error);
+                // Token 無效，清除並顯示登入頁面
+                localStorage.removeItem('jwt');
+                localStorage.removeItem('profileId');
+                localStorage.removeItem('userProfile');
+                showLoginPage();
+            }
+        }
     </script>
 </body>
 </html>
