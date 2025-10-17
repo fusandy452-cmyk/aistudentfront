@@ -1,14 +1,31 @@
-# AI 留學顧問 - 前端完整功能指南
+# AI 留學顧問 - 前端服務 (微服務架構)
 
 ## 📱 專案概述
 
-這是 AI 留學顧問平台的前端應用，提供完整的用戶體驗，包括登入、設定、聊天和個人管理功能。支援 Google OAuth 2.0 和 LINE Login，具備響應式設計和智能用戶流程。
+這是 AI 留學顧問平台的前端應用，採用微服務架構設計，提供完整的用戶體驗，包括登入、設定、聊天和個人管理功能。支援 Google OAuth 2.0 和 LINE Login，具備響應式設計和智能用戶流程，通過後端服務與獨立的資料庫服務進行數據交互。
+
+## 🏗️ 微服務架構
+
+### 服務架構
+```
+前端服務 (aistudent.zeabur.app) ← 本專案
+    ↓ API 調用
+後端服務 (aistudentbackend.zeabur.app)
+    ↓ API 調用
+資料庫服務 (ai-studentdatabas.zeabur.app)
+```
+
+### 前端優勢
+- ✅ **獨立部署**：前端可獨立更新和部署
+- ✅ **靜態資源**：快速載入和 CDN 加速
+- ✅ **用戶體驗**：專注於界面和交互設計
+- ✅ **技術簡化**：純前端技術，無需後端依賴
 
 ## 🌟 完整功能列表
 
 ### 🔐 用戶認證系統
 - ✅ **Google OAuth 2.0 登入**：安全的第三方認證
-- ✅ **LINE Login 整合**：支援台灣用戶慣用的登入方式（開發中）
+- ✅ **LINE Login 整合**：支援台灣用戶慣用的登入方式
 - ✅ **智能登入流程**：自動判斷用戶是否為首次登入
 - ✅ **跳過登入選項**：允許用戶直接體驗 AI 功能
 - ✅ **跨瀏覽器兼容**：支援 iOS Safari、Chrome、Firefox 等
@@ -17,7 +34,7 @@
 - ✅ **留學需求設定**：學術背景、預算規劃、目標設定
 - ✅ **角色選擇**：支援學生和家長兩種身份
 - ✅ **資料編輯功能**：模態框形式的設定編輯
-- ✅ **設定持久化**：與後端資料庫同步
+- ✅ **設定持久化**：與後端資料庫服務同步
 - ✅ **智能重定向**：根據用戶狀態自動跳轉
 
 ### 💬 智能對話系統
@@ -61,13 +78,20 @@
 - **Profile ID**：用戶設定資料關聯
 - **Chat History**：對話記錄本地儲存
 
-## 🔗 與後端整合
+## 🔗 與微服務整合
 
-### API 通信
-前端通過以下 API 與後端進行通信：
+### API 通信架構
+前端通過後端服務與資料庫服務進行通信：
+
+```
+用戶操作 → 前端 JavaScript → 後端 API → 資料庫服務 API → 資料存儲
+```
+
+### API 端點映射
 
 #### 認證相關
 ```
+前端調用 → 後端處理 → 資料庫服務
 GET  /api/v1/auth/config          # 獲取認證配置
 GET  /api/v1/auth/line/login      # 獲取 LINE 登入 URL
 GET  /auth/google/callback        # Google OAuth 回調
@@ -76,6 +100,7 @@ GET  /auth/line/callback          # LINE Login 回調
 
 #### 用戶資料管理
 ```
+前端調用 → 後端處理 → 資料庫服務
 GET  /api/v1/user/check-profile           # 檢查用戶設定狀態
 GET  /api/v1/user/profile/<profile_id>    # 獲取用戶設定資料
 PUT  /api/v1/user/update-profile/<id>     # 更新用戶設定
@@ -84,31 +109,35 @@ POST /api/v1/intake                       # 提交初始設定
 
 #### 通知設定
 ```
+前端調用 → 後端處理 → 資料庫服務
 GET  /api/v1/user/notification-settings   # 獲取通知設定
 POST /api/v1/user/notification-settings   # 更新通知設定
 ```
 
 #### AI 對話
 ```
+前端調用 → 後端處理 → AI 服務 + 資料庫服務
 POST /api/v1/chat                         # 發送聊天訊息
 ```
 
 #### 家長功能
 ```
+前端調用 → 後端處理 → 資料庫服務
 GET  /api/v1/parent/student-progress      # 查詢學生進度
 ```
 
 ### 資料流程
-1. **用戶登入** → JWT Token 儲存 → 設定狀態檢查
-2. **設定提交** → 後端驗證 → 資料庫儲存 → 前端更新
-3. **AI 對話** → 用戶資料載入 → Gemini AI 處理 → 回覆顯示
-4. **進度查詢** → 家長身份驗證 → 學生資料分析 → 報告展示
+1. **用戶登入** → 後端驗證 → JWT Token 儲存 → 設定狀態檢查
+2. **設定提交** → 後端驗證 → 資料庫服務儲存 → 前端更新
+3. **AI 對話** → 用戶資料載入 → Gemini AI 處理 → 資料庫服務記錄 → 回覆顯示
+4. **進度查詢** → 家長身份驗證 → 資料庫服務分析 → 報告展示
 
 ### 錯誤處理
 - **網路錯誤**：自動重試和用戶提示
 - **認證失敗**：重新導向登入頁面
 - **資料驗證**：即時表單驗證和錯誤提示
 - **API 錯誤**：友好的錯誤訊息顯示
+- **服務不可用**：優雅的降級處理
 
 ## 📁 檔案結構
 
@@ -118,7 +147,8 @@ frontend/
 ├── zeabur.json            # 部署配置
 ├── .zeaburignore         # 部署忽略檔案
 ├── README.md             # 前端說明文檔
-└── README_COMPLETE.md    # 完整功能指南（本文件）
+└── doc/                  # 文檔目錄
+    └── README.md
 ```
 
 ## 🚀 部署指南
@@ -159,11 +189,24 @@ window.__LINE_CHANNEL_ID__ = '2008117059';
 window.__GOOGLE_CLIENT_ID__ = '300123710303-m4j1laa65p664n5vtrdkfvfa7b42c2o6.apps.googleusercontent.com';
 ```
 
+### 微服務環境配置
+```javascript
+// 服務端點配置
+const SERVICES = {
+    FRONTEND: 'https://aistudent.zeabur.app',
+    BACKEND: 'https://aistudentbackend.zeabur.app',
+    DATABASE: 'https://ai-studentdatabas.zeabur.app'
+};
+
+// API 基礎 URL
+const API_BASE = `${SERVICES.BACKEND}/api/v1`;
+```
+
 ## 🎨 頁面結構
 
 ### 1. 登入頁面 (`login-page`)
 - Google 登入按鈕
-- LINE 登入按鈕（開發中）
+- LINE 登入按鈕
 - 跳過登入選項
 - 語言切換功能
 
@@ -197,7 +240,7 @@ window.__GOOGLE_CLIENT_ID__ = '300123710303-m4j1laa65p664n5vtrdkfvfa7b42c2o6.app
 // 檢查用戶狀態並智能跳轉
 function checkUserProfileStatus() {
     // 1. 檢查 JWT Token
-    // 2. 查詢用戶是否有 profile 資料
+    // 2. 調用後端 API 查詢用戶 profile 資料
     // 3. 根據結果跳轉到相應頁面
 }
 ```
@@ -207,9 +250,36 @@ function checkUserProfileStatus() {
 // 載入並顯示用戶資訊
 function loadUserInfo() {
     // 1. 從 localStorage 讀取用戶資料
-    // 2. 顯示用戶名稱和角色
-    // 3. 設定頭像（支援預設頭像）
-    // 4. 根據角色顯示相應功能
+    // 2. 調用後端 API 獲取最新資料
+    // 3. 顯示用戶名稱和角色
+    // 4. 設定頭像（支援預設頭像）
+    // 5. 根據角色顯示相應功能
+}
+```
+
+### API 通信封裝
+```javascript
+// 統一的 API 調用函數
+async function apiCall(endpoint, method = 'GET', data = null) {
+    try {
+        const response = await fetch(`${API_BASE}${endpoint}`, {
+            method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getJWTToken()}`
+            },
+            body: data ? JSON.stringify(data) : null
+        });
+        
+        if (!response.ok) {
+            throw new Error(`API Error: ${response.status}`);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('API Call Error:', error);
+        throw error;
+    }
 }
 ```
 
@@ -263,6 +333,44 @@ function saveChatHistory(message, sender) {
 - **色彩對比**：符合無障礙標準
 - **觸控優化**：iOS Safari 特別優化
 
+## 🔗 微服務集成
+
+### 服務發現
+```javascript
+// 自動檢測服務狀態
+async function checkServicesHealth() {
+    try {
+        const backendHealth = await fetch(`${SERVICES.BACKEND}/api/v1/health`);
+        const databaseHealth = await fetch(`${SERVICES.DATABASE}/health`);
+        
+        return {
+            backend: backendHealth.ok,
+            database: databaseHealth.ok
+        };
+    } catch (error) {
+        console.error('Service health check failed:', error);
+        return { backend: false, database: false };
+    }
+}
+```
+
+### 錯誤處理策略
+```javascript
+// 服務不可用時的降級處理
+function handleServiceUnavailable(service) {
+    switch (service) {
+        case 'backend':
+            showMessage('後端服務暫時不可用，請稍後再試');
+            break;
+        case 'database':
+            showMessage('資料庫服務暫時不可用，部分功能可能受限');
+            break;
+        default:
+            showMessage('服務暫時不可用，請稍後再試');
+    }
+}
+```
+
 ## 🐛 常見問題
 
 ### Q: 如何解決 CORS 錯誤？
@@ -272,10 +380,10 @@ A: 確保後端已正確配置 CORS 設定，允許前端域名訪問。
 A: 檢查 JWT Token 是否正確儲存，以及後端認證 API 是否正常。
 
 ### Q: AI 對話沒有回應？
-A: 確認 Gemini API Key 已正確配置，並檢查網路連接。
+A: 確認後端服務正常運行，Gemini API Key 已正確配置。
 
 ### Q: 設定資料無法儲存？
-A: 檢查 profileId 是否正確，以及後端 API 是否可訪問。
+A: 檢查 profileId 是否正確，以及後端和資料庫服務是否可訪問。
 
 ### Q: iOS Safari 按鈕無法點擊？
 A: 使用 `onclick` 屬性而非 `addEventListener`，並添加 iOS 兼容性 CSS。
@@ -285,6 +393,23 @@ A: 系統會自動檢測並提供友好的提示，建議使用「透過電子�
 
 ### Q: 頭像無法顯示？
 A: 系統已實現本地預設頭像，不依賴外部服務，確保穩定顯示。
+
+### Q: 微服務通信失敗？
+A: 檢查後端服務和資料庫服務是否正常運行，確認服務 URL 配置正確。
+
+## 📊 性能優化
+
+### 前端優化
+- **靜態資源壓縮**：HTML、CSS、JS 文件壓縮
+- **CDN 加速**：通過 Zeabur CDN 加速資源載入
+- **本地存儲**：減少 API 調用頻率
+- **懶載入**：按需載入非關鍵資源
+
+### 網絡優化
+- **API 快取**：合理的 API 響應快取策略
+- **錯誤重試**：網絡錯誤自動重試機制
+- **超時處理**：合理的請求超時設定
+- **降級處理**：服務不可用時的優雅降級
 
 ## 📞 技術支援
 
@@ -298,7 +423,14 @@ A: 系統已實現本地預設頭像，不依賴外部服務，確保穩定顯�
 
 ## 📝 更新日誌
 
-### 最新更新 (2024)
+### 最新更新 (2025-10-17)
+- ✅ **微服務架構適配**：適配新的微服務架構
+- ✅ **API 通信優化**：改進與後端服務的通信
+- ✅ **錯誤處理增強**：完善的微服務錯誤處理
+- ✅ **服務監控**：添加服務健康檢查功能
+- ✅ **文檔更新**：更新 README 以反映微服務架構
+
+### 歷史更新 (2024)
 - ✅ 完整實現所有 README.md 中提到的功能
 - ✅ 美化用戶資訊頁面設計
 - ✅ 修正頭像載入錯誤問題
