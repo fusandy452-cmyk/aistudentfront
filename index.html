@@ -1379,8 +1379,8 @@
             document.getElementById('login-buttons').classList.remove('hidden');
         }
 
-        // 登入功能 - 確保在全局作用域中定義
-        window.loginWithGoogle = function() {
+        // 登入功能 - 簡化版本
+        function loginWithGoogle() {
             console.log('Google login button clicked');
             if (window.addDebugInfo) {
                 addDebugInfo('Google 登入按鈕被點擊');
@@ -1495,7 +1495,7 @@
                     popup.close();
                 }
             }, 300000);
-        };
+        }
 
         function showLineUnavailable() {
             alert(currentLanguage === 'en' ? 
@@ -1503,7 +1503,7 @@
                 'LINE 登入功能即將推出！目前請使用 Google 登入或跳過登入。');
         }
         
-        window.loginWithLINE = function() {
+        function loginWithLINE() {
             console.log('LINE login button clicked');
             
             // 檢查是否在 LINE 內建瀏覽器中
@@ -1571,7 +1571,7 @@
                             'LINE 登入失敗，請重試或使用 Google 登入。');
                     });
             }
-        };
+        }
         
         // 繼續到聊天對話框
         function continueToChat() {
@@ -2359,28 +2359,39 @@
         }
 
 
-        // 跳過登入 - 確保在全局作用域中定義
-        window.skipLogin = function() {
+        // 跳過登入 - 簡化版本
+        function skipLogin() {
             console.log('skipLogin function called');
-            // 創建一個假的 JWT token 用於測試
-            var fakeToken = 'fake-jwt-token-for-testing';
-            localStorage.setItem('jwt', fakeToken);
-            
-            // 同時設置 Cookie 用於 SSE 認證
-            setJWTCookie(fakeToken);
-            
-            // 創建一個假的用戶資料
-            var fakeUser = {
-                userId: 'test-user',
-                email: 'test@example.com',
-                name: '測試用戶',
-                avatar: 'https://via.placeholder.com/80'
-            };
-            localStorage.setItem('userProfile', JSON.stringify(fakeUser));
-            
-            // 直接進入聊天，不需要設定頁面
-            showChatPage();
-        };
+            try {
+                // 創建一個假的 JWT token 用於測試
+                var fakeToken = 'fake-jwt-token-for-testing';
+                localStorage.setItem('jwt', fakeToken);
+                
+                // 同時設置 Cookie 用於 SSE 認證
+                if (typeof setJWTCookie === 'function') {
+                    setJWTCookie(fakeToken);
+                }
+                
+                // 創建一個假的用戶資料
+                var fakeUser = {
+                    userId: 'test-user',
+                    email: 'test@example.com',
+                    name: '測試用戶',
+                    avatar: 'https://via.placeholder.com/80'
+                };
+                localStorage.setItem('userProfile', JSON.stringify(fakeUser));
+                
+                // 直接進入聊天，不需要設定頁面
+                if (typeof showChatPage === 'function') {
+                    showChatPage();
+                } else {
+                    alert('頁面載入中，請稍後再試');
+                }
+            } catch (error) {
+                console.error('skipLogin error:', error);
+                alert('發生錯誤：' + error.message);
+            }
+        }
 
 
         // 初始化年份選項
