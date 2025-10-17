@@ -246,36 +246,54 @@
 
             <main class="p-6">
                 <!-- 用戶資訊卡片 -->
-                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-100 mb-6">
-                    <div class="flex items-center mb-4">
-                        <img id="user-info-avatar" class="w-16 h-16 rounded-full mr-4" src="" alt="User Avatar">
-                        <div>
-                            <h2 class="text-xl font-bold text-gray-800" id="user-info-name">用戶名稱</h2>
-                            <p class="text-gray-600" id="user-info-role">學生</p>
+                <div class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-8 rounded-2xl border border-blue-200 mb-8 shadow-lg">
+                    <div class="flex items-center mb-6">
+                        <div class="relative">
+                            <img id="user-info-avatar" class="w-20 h-20 rounded-full mr-6 border-4 border-white shadow-md object-cover" src="" alt="User Avatar" onerror="this.src='https://via.placeholder.com/80x80/4F46E5/FFFFFF?text=👤'">
+                            <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-2 border-white rounded-full flex items-center justify-center">
+                                <div class="w-2 h-2 bg-white rounded-full"></div>
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <h2 class="text-2xl font-bold text-gray-800 mb-1" id="user-info-name">載入中...</h2>
+                            <div class="flex items-center">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800" id="user-info-role">
+                                    <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                                    載入中...
+                                </span>
+                            </div>
                         </div>
                     </div>
-                    <p class="text-gray-700" data-zh="您的留學規劃資料已準備就緒，讓我們開始諮詢吧！" data-en="Your study abroad planning data is ready, let's start consulting!">您的留學規劃資料已準備就緒，讓我們開始諮詢吧！</p>
+                    <div class="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-white/50">
+                        <p class="text-gray-700 leading-relaxed text-center" data-zh="🎓 您的留學規劃資料已準備就緒，讓我們開始諮詢吧！" data-en="🎓 Your study abroad planning data is ready, let's start consulting!">🎓 您的留學規劃資料已準備就緒，讓我們開始諮詢吧！</p>
+                    </div>
                 </div>
 
                 <!-- 主要操作按鈕 -->
-                <div class="space-y-4">
-                    <button onclick="continueToChat()" class="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-800 py-4 px-6 rounded-xl font-semibold hover:from-yellow-500 hover:to-yellow-600 transition-all duration-200 text-lg shadow-lg flex items-center justify-center">
-                        <span class="mr-2">💬</span>
+                <div class="space-y-5">
+                    <button onclick="continueToChat()" class="group w-full bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-gray-800 py-5 px-8 rounded-2xl font-bold hover:from-yellow-500 hover:via-yellow-600 hover:to-yellow-700 transition-all duration-300 text-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-1 flex items-center justify-center">
+                        <span class="mr-3 text-xl group-hover:scale-110 transition-transform duration-300">💬</span>
                         <span data-zh="繼續跟AI留學顧問諮詢" data-en="Continue Consulting with AI Study Abroad Advisor">繼續跟AI留學顧問諮詢</span>
                     </button>
                     
-                    <button onclick="openUserSettings()" class="w-full bg-white text-gray-700 py-3 px-6 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors font-medium flex items-center justify-center">
-                        <span class="mr-2">⚙️</span>
+                    <button onclick="openUserSettings()" class="group w-full bg-white text-gray-700 py-4 px-8 rounded-2xl border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 flex items-center justify-center">
+                        <span class="mr-3 text-lg group-hover:rotate-90 transition-transform duration-300">⚙️</span>
                         <span data-zh="編輯設定資料" data-en="Edit Settings">編輯設定資料</span>
                     </button>
                 </div>
 
                 <!-- 家長專用功能 -->
-                <div id="parent-only-section" class="mt-6 hidden">
-                    <div class="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-100">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-3" data-zh="家長專用功能" data-en="Parent-Only Features">家長專用功能</h3>
-                        <button onclick="queryStudentProgress()" class="w-full bg-green-500 text-white py-3 px-4 rounded-lg hover:bg-green-600 transition-colors font-medium">
-                            <span class="mr-2">📊</span>
+                <div id="parent-only-section" class="mt-8 hidden">
+                    <div class="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 p-6 rounded-2xl border border-green-200 shadow-lg">
+                        <div class="flex items-center mb-4">
+                            <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center mr-3">
+                                <span class="text-white text-lg">👨‍👩‍👧‍👦</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-800" data-zh="家長專用功能" data-en="Parent-Only Features">家長專用功能</h3>
+                        </div>
+                        <p class="text-gray-600 mb-4 text-sm" data-zh="查看您孩子的諮詢進度和學習狀況" data-en="View your child's consultation progress and learning status">查看您孩子的諮詢進度和學習狀況</p>
+                        <button onclick="queryStudentProgress()" class="group w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-4 px-6 rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 flex items-center justify-center">
+                            <span class="mr-3 text-lg group-hover:scale-110 transition-transform duration-300">📊</span>
                             <span data-zh="查詢學生進度" data-en="Query Student Progress">查詢學生進度</span>
                         </button>
                     </div>
@@ -872,6 +890,16 @@
             // 創建一個假的 JWT token 用於測試
             var fakeToken = 'fake-jwt-token-for-testing';
             localStorage.setItem('jwt', fakeToken);
+            
+            // 創建測試用戶資料
+            var testUser = {
+                name: '測試用戶',
+                email: 'test@example.com',
+                avatar: 'https://via.placeholder.com/80x80/4F46E5/FFFFFF?text=👤'
+            };
+            localStorage.setItem('userProfile', JSON.stringify(testUser));
+            console.log('已創建測試用戶資料:', testUser);
+            
             showSetupPage();
         }
 
@@ -879,13 +907,33 @@
         function loadUserInfo() {
             try {
                 var userProfile = localStorage.getItem('userProfile');
+                var userNameElement = document.getElementById('user-info-name');
+                var userRoleElement = document.getElementById('user-info-role');
+                var userAvatarElement = document.getElementById('user-info-avatar');
+                
                 if (userProfile) {
                     var user = JSON.parse(userProfile);
-                    document.getElementById('user-info-name').textContent = user.name || '用戶';
-                    document.getElementById('user-info-role').textContent = currentRole === 'parent' ? '家長' : '學生';
-                    if (user.avatar) {
-                        document.getElementById('user-info-avatar').src = user.avatar;
+                    // 正確顯示用戶名稱
+                    var displayName = user.name || user.displayName || user.email || '用戶';
+                    userNameElement.textContent = displayName;
+                    
+                    // 正確顯示角色（使用更美觀的標籤）
+                    var roleText = currentRole === 'parent' ? '家長' : '學生';
+                    var roleIcon = currentRole === 'parent' ? '👨‍👩‍👧‍👦' : '👨‍🎓';
+                    userRoleElement.innerHTML = '<span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>' + roleIcon + ' ' + roleText;
+                    
+                    // 設定頭像
+                    if (user.avatar && user.avatar !== '') {
+                        userAvatarElement.src = user.avatar;
+                    } else {
+                        // 使用預設頭像
+                        userAvatarElement.src = 'https://via.placeholder.com/80x80/4F46E5/FFFFFF?text=' + encodeURIComponent(displayName.charAt(0).toUpperCase());
                     }
+                } else {
+                    // 如果沒有用戶資料，顯示預設值
+                    userNameElement.textContent = '訪客';
+                    userRoleElement.innerHTML = '<span class="w-2 h-2 bg-gray-400 rounded-full mr-2"></span>👤 訪客';
+                    userAvatarElement.src = 'https://via.placeholder.com/80x80/9CA3AF/FFFFFF?text=👤';
                 }
                 
                 // 根據角色顯示/隱藏家長專用功能
@@ -895,8 +943,18 @@
                 } else {
                     parentSection.classList.add('hidden');
                 }
+                
+                console.log('用戶資訊已載入:', {
+                    name: userNameElement.textContent,
+                    role: currentRole,
+                    hasAvatar: userAvatarElement.src
+                });
+                
             } catch (error) {
                 console.error('載入用戶資訊失敗:', error);
+                // 顯示錯誤狀態
+                document.getElementById('user-info-name').textContent = '載入失敗';
+                document.getElementById('user-info-role').innerHTML = '<span class="w-2 h-2 bg-red-500 rounded-full mr-2"></span>❌ 錯誤';
             }
         }
 
@@ -1905,9 +1963,19 @@
                     try {
                         var user = JSON.parse(decodeURIComponent(userInfo));
                         localStorage.setItem('userProfile', JSON.stringify(user));
+                        console.log('用戶資料已儲存:', user);
                     } catch (e) {
                         console.error('解析用戶資料失敗:', e);
                     }
+                } else {
+                    // 如果沒有用戶資料，創建一個基本的用戶資料
+                    var basicUser = {
+                        name: '用戶',
+                        email: 'user@example.com',
+                        avatar: ''
+                    };
+                    localStorage.setItem('userProfile', JSON.stringify(basicUser));
+                    console.log('已創建基本用戶資料');
                 }
                 
                 // 智能檢查用戶狀態
